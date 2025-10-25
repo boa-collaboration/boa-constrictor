@@ -333,12 +333,35 @@ def _build_and_import_cuda_extension() -> object:
     from importlib.machinery import EXTENSION_SUFFIXES
     suf = EXTENSION_SUFFIXES[0]
     so_path = build_dir / (ext_name + suf)
-    # Get pybind11 include flags
-    pybind_includes = subprocess.check_output([sys.executable, '-m', 'pybind11', '--includes']).decode().strip()
-    # pybind11 returns something like: -I/usr/include/pythonX -I/path/to/pybind11
-    includes = pybind_includes.split()
+    # Build include dirs robustly (handle spaces in paths)
+    import pybind11
+    inc_dirs = []
+    try:
+        cfg_paths = sysconfig.get_paths()
+        for key in ('include', 'platinclude'):  # e.g., Python.h location
+            p = cfg_paths.get(key)
+            if p:
+                inc_dirs.append(p)
+    except Exception:
+        pass
+    # pybind11 headers
+    for k in (pybind11.get_include(False), pybind11.get_include(True)):
+        if k and k not in inc_dirs:
+            inc_dirs.append(k)
+
     cmd = [nvcc, str(src_cu), '-shared', '-Xcompiler', '-fPIC', '-o', str(so_path),
-           '-std=c++14', '-O3', '-lcudart'] + includes
+           '-std=c++14', '-O3']
+    # CUDA runtime library
+    cuda_home = os.environ.get('CUDA_HOME') or os.environ.get('CUDA_PATH') or '/usr/local/cuda'
+    lib64 = pathlib.Path(cuda_home) / 'lib64'
+    if lib64.exists():
+        cmd += ['-L', str(lib64)]
+        # add rpath for runtime loading
+        cmd += ['-Xlinker', f'-rpath,{str(lib64)}']
+    cmd += ['-lcudart']
+    # Add include directories as separate args to preserve spaces
+    for inc in inc_dirs:
+        cmd += ['-I', inc]
     # Run nvcc
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if res.returncode != 0:
@@ -354,28 +377,9 @@ def _build_and_import_cuda_extension() -> object:
 
 # Build extension on import: try CUDA if requested, otherwise CPU fallback
 _ext = None
-try:
-    use_cuda = os.environ.get('GPU_RANGE_CUDA', '1') == '1'
-    if use_cuda:
-        try:
-            _ext = _build_and_import_cuda_extension()
-        except Exception as e:
-            # fall back to CPU extension but report
-            print('CUDA build failed, falling back to CPU extension:', e)
-            _ext = _build_and_import_extension()
-    else:
-        _ext = _build_and_import_extension()
-except Exception as e:
-    raise
-
-# Ensure CPU extension is available for decoder fallback
-_cpu_ext = None
-try:
-    _cpu_ext = _build_and_import_extension()
-except Exception:
-    _cpu_ext = None
-
-
+_cpu_ext = None  # optional CPU extension placeholder for fallbacks
+_ext = _build_and_import_cuda_extension()
+    
 # Expose a minimal namespace compatible with the used subset: constriction.stream.queue
 class _ModelStub:
     def __init__(self, kind: str, **kwargs):

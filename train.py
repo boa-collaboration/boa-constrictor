@@ -21,7 +21,7 @@ def evaluate_bpp(model, loader, criterion, device="cuda"):
     bpp = mean_nll / np.log(2)  # bits per input byte
     return bpp
 
-def train(model, train_loader, val_loader, test_loader, optimizer, criterion, device="cuda", name="BoaBytePredictor", NUM_EPOCHS=10, PRECISION="fp32"):
+def train(model, train_loader, val_loader, test_loader, optimizer, criterion, device="cuda", name="BoaBytePredictor", NUM_EPOCHS=10, PRECISION="fp32", progress=True):
     
     IS_CUDA = torch.cuda.is_available() and device == "cuda"
     
@@ -47,7 +47,7 @@ def train(model, train_loader, val_loader, test_loader, optimizer, criterion, de
     train_steps_per_epoch = len(train_loader)
     total_train_steps = max(1, train_steps_per_epoch)
     for epoch in range(1, NUM_EPOCHS + 1):
-        loader = tqdm(train_loader, total=total_train_steps, desc=f"Epoch {epoch} [{PRECISION}]")
+        loader = tqdm(train_loader, total=total_train_steps, desc=f"Epoch {epoch} [{PRECISION}]", disable=not progress)
         for batch in loader:
             x = batch[:, :-1].to(device, non_blocking=True)
             y = batch[:, 1:].to(device, non_blocking=True)
@@ -66,11 +66,12 @@ def train(model, train_loader, val_loader, test_loader, optimizer, criterion, de
 
             # --- Progress ---
             bits_per_byte = loss.item() / np.log(2)
-            loader.set_postfix(
-                loss=f"{loss.item():.4f}",
-                bits=f"{bits_per_byte:.3f}",
-                ratio=f"{(8 / bits_per_byte):.2f}x"
-            )
+            if progress:
+                loader.set_postfix(
+                    loss=f"{loss.item():.4f}",
+                    bits=f"{bits_per_byte:.3f}",
+                    ratio=f"{(8 / bits_per_byte):.2f}x"
+                )
 
         torch.save(model.state_dict(), f"{name}_{datetime.now().strftime('%dth%b')}_Checkpoint_epoch_{epoch}_{PRECISION}.pt")
         val_bpp = evaluate_bpp(model, val_loader, criterion, device=device)

@@ -155,8 +155,8 @@ def BOA(device, filepath: str, model):
                 'uncompressed_len': int(ulen),
             }
 
-        def compress(self, npz_path: str, seq_size: int = 0, chunks_count: int = 0, progress: bool = True):
-            data = np.load(npz_path)['data']
+        def compress(self, data_path: str, seq_size: int = 0, chunks_count: int = 0, progress: bool = True):
+            data = Path(data_path).read_bytes()
             if isinstance(data, np.ndarray):
                 data_bytes = data.tobytes() if data.dtype == np.uint8 else bytes(data)
             elif isinstance(data, (bytes, bytearray, memoryview)):
@@ -165,7 +165,9 @@ def BOA(device, filepath: str, model):
                 raise TypeError("npz['data'] must be bytes-like or uint8 array")
 
             chunks_np, chunk_len = self._split_to_chunks(data_bytes, seq_size=seq_size, chunks_count=chunks_count)
+            
             x_list = [torch.from_numpy(c).unsqueeze(0).to(device) for c in chunks_np]
+
             compressed_list, first_bytes, _ = compress(
                 self.model, x_list, device=device, progress=progress
             )

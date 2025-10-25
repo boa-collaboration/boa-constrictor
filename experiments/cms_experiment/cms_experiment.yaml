@@ -1,0 +1,27 @@
+name: cms_experiment
+file_path: CMS_DATA_float32.bin  # path to the binary dataset to compress/train on
+
+# Optional: provide a pre-trained model checkpoint (.pt). If set, training will be skipped
+# Path can be absolute or relative to this YAML file's directory
+model_path: cms_experiment_final_model_fp32.pt
+
+progress: true
+device: cuda
+precision: fp32
+
+dataloader:
+  seq_len: 32768
+  batch_size: 3
+
+model:
+  d_model: 256
+  num_layers: 2
+
+training:
+  lr: 5e-4
+  epochs: 10
+
+compression:
+  chunks_count: 10000
+
+splits: [0.8, 0.1, 0.1]

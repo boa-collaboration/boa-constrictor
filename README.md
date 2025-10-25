@@ -9,7 +9,7 @@ This repo provides a byte-level compression pipeline driven by a neural predicto
 
 Key entrypoints:
 - CLI: `paper-code/main.py`
-- Example config: `paper-code/configs/experiment.yaml`
+- Example config: `experiments/cms_experiment/cms_experiment.yaml`
 
 
 ## Quick start
@@ -17,7 +17,7 @@ Key entrypoints:
 1) Install dependencies (PyTorch not pinned here; use the build suited for your system):
 
 ```bash
-python3 -m pip install -r paper-code/requirements.txt
+python3 -m pip install -r requirements.txt
 ```
 
 2) Create a config interactively and run the experiment:
@@ -29,7 +29,7 @@ python3 paper-code/main.py --new-experiment
 3) Or run with an existing config and show timings:
 
 ```bash
-python3 paper-code/main.py --config paper-code/configs/experiment.yaml --show-timings
+python3 paper-code/main.py --config experiment_name --show-timings
 ```
 
 Useful flags:
@@ -37,11 +37,12 @@ Useful flags:
 - `--device cpu|cuda` to override device
 - `--precision fp32|fp16|fp8` to override compute precision
 - `--train-only`, `--compress-only`, `--decompress-only` to run specific stages
+ - `--model-path /path/to/model.pt` to load a pre-trained checkpoint and skip training (also supported via `model_path` in the YAML)
 
 
 ## Config file structure
 
-A minimal example (`paper-code/configs/experiment.yaml`):
+A minimal example (`configs/experiment.yaml`):
 
 ```yaml
 name: example_experiment
@@ -49,6 +50,10 @@ file_path: /path/to/dataset.bin
 progress: true
 device: cuda
 precision: fp16
+
+# Optional: set a checkpoint to skip training
+# Path can be absolute or relative to this YAML file
+# model_path: /path/to/checkpoints/example_experiment_final_model_fp16.pt
 
 dataloader:
   seq_len: 32768

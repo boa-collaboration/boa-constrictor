@@ -1,3 +1,5 @@
+# Use PyTorch CUDA 13.0 wheels
+--extra-index-url https://download.pytorch.org/whl/cu130
 pyyaml>=6.0
 tqdm>=4.0
 causal-conv1d==1.5.2
@@ -10,9 +12,8 @@ scikit-learn==1.7.2
 scipy==1.16.2
 seaborn==0.13.2
 setuptools==70.2.0
-torch==2.8.0+cu130
-torchac==0.9.3
-torchvision==0.23.0+cu130
+torch==2.9.0+cu130
+torchvision==0.24.0+cu130
 tqdm==4.67.1
-triton==3.4.0
+triton==3.5.0
 wheel==0.45.1
