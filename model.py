@@ -12,16 +12,20 @@ def BoaConstrictor(d_model=256, num_layers=4, device="cuda"):
         from mamba_ssm.utils.generation import InferenceParams
     else:
         device = "cpu"
-        from mambapy import Mamba
         from mambapy.mamba import MambaBlock as MambaCPU, MambaConfig
 
     def tag_mamba_layers_with_ids(model):
         """Give each Mamba layer a unique .layer_idx (0..N-1) for streaming cache."""
         i = 0
         for m in model.modules():
-            if isinstance(m, Mamba):
-                setattr(m, "layer_idx", i)
-                i += 1
+            if IS_CUDA:
+                if isinstance(m, Mamba):
+                    setattr(m, "layer_idx", i)
+                    i += 1
+            else:
+                if isinstance(m, MambaCPU):
+                    setattr(m, "layer_idx", i)
+                    i += 1
 
     def bump_offset(inf, k: int = 1):
         # Most builds use seqlen_offset

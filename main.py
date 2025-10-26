@@ -138,7 +138,9 @@ def main():
 
     # Apply CLI overrides
     progress = not args.no_progress and config.get('progress', True)
-    device = args.device or config.get('device', 'cuda' if torch.cuda.is_available() else 'cuda')
+    device =  config.get('device', 'cuda' if torch.cuda.is_available() else 'cuda') or args.device
+    
+    print(device)
     precision = args.precision or config.get('precision', 'fp32')
     verify = args.verify or bool(config.get('verify', False))
     # Model path can be provided via CLI or config (either top-level 'model_path' or under 'model.path')
@@ -198,16 +200,16 @@ def main():
     exp_dir.mkdir(parents=True, exist_ok=True)
 
     # Setup model, dataloaders, optimizer, loss
-    model = BoaConstrictor(d_model=d_model, num_layers=num_layers)
+    model = BoaConstrictor(d_model=d_model, num_layers=num_layers, device=device)
 
-    dataloader = ByteDataloader(data_bytes, seq_len=seq_len, batch_size=batch_size)
+    dataloader = ByteDataloader(data_bytes, seq_len=seq_len, batch_size=batch_size, device=device)
 
     train_b, val_b, test_b = make_splits(data_bytes, dataloader.seq_len, dataloader.batch_size,
                                          splits=tuple(config.get('splits', (0.8, 0.1, 0.1))))
 
-    train_loader = ByteDataloader(train_b, seq_len=dataloader.seq_len, batch_size=dataloader.batch_size)
-    val_loader = ByteDataloader(val_b, seq_len=dataloader.seq_len, batch_size=dataloader.batch_size)
-    test_loader = ByteDataloader(test_b, seq_len=dataloader.seq_len, batch_size=dataloader.batch_size)
+    train_loader = ByteDataloader(train_b, seq_len=dataloader.seq_len, batch_size=dataloader.batch_size, device=device)
+    val_loader = ByteDataloader(val_b, seq_len=dataloader.seq_len, batch_size=dataloader.batch_size, device=device)
+    test_loader = ByteDataloader(test_b, seq_len=dataloader.seq_len, batch_size=dataloader.batch_size, device=device)
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)

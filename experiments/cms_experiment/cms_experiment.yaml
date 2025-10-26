@@ -6,7 +6,7 @@ file_path: CMS_DATA_float32.bin  # path to the binary dataset to compress/train 
 model_path: cms_experiment_final_model_fp32.pt
 
 progress: true
-device: cuda
+device: cpu
 precision: fp32
 
 dataloader:
@@ -22,6 +22,6 @@ training:
   epochs: 10
 
 compression:
-  chunks_count: 10000
-
+  chunks_count: 100
+  file_to_compress: 'CMS_DATA_float32_100k.bin'
 splits: [0.8, 0.1, 0.1]

@@ -37,8 +37,8 @@ Useful flags:
 - `--device cpu|cuda` to override device
 - `--precision fp32|fp16|fp8` to override compute precision
 - `--train-only`, `--compress-only`, `--decompress-only` to run specific stages
- - `--model-path /path/to/model.pt` to load a pre-trained checkpoint and skip training (also supported via `model_path` in the YAML)
-
+- `--model-path /path/to/model.pt` to load a pre-trained checkpoint and skip training (also supported via `model_path` in the YAML)
+- `--verify` to verify the files after compression-decompression cycle 
 
 ## Config file structure
 

@@ -155,7 +155,8 @@ def compress_CPU(
       first_bytes: list[int]
       lengths: list[int]
     """
-    # Setup
+    # Setup (CPU only)
+    device = "cpu"
     model.eval().to(device)
     N = len(x_list)
     assert N >= 1, "Need at least one chunk."
@@ -166,49 +167,26 @@ def compress_CPU(
 
     Ls = [int(x.shape[1]) for x in xs]
     maxL = max(Ls)
-    # Pack into one [N, maxL] for batched reads
+
+    # Pack into one [N, maxL] tensor on CPU
     X = torch.zeros((N, maxL), dtype=torch.long, device=device)
     for i, x in enumerate(xs):
         X[i, :Ls[i]] = x[0]
-
     first_bytes = X[:, 0].tolist()
 
     import constriction
     fam = constriction.stream.model.Categorical(perfect=False)
     encs = [constriction.stream.queue.RangeEncoder() for _ in range(N)]
 
-    # Streaming state
-    inf = model.init_stream(max_len=maxL, batch_size=N, device=device, dtype=torch.float32)
-    prev = X[:, 0].clone()  # [N] device
-    lens_t = torch.tensor(Ls, device=device, dtype=torch.long)
-
-    # CUDA streams and double-buffered pinned host probs
-    compute_stream = torch.cuda.Stream(device=device)
-    transfer_stream = torch.cuda.Stream(device=device)
-    prob_bufs = [
-        torch.empty((N, 256), dtype=torch.float32, pin_memory=True),
-        torch.empty((N, 256), dtype=torch.float32, pin_memory=True),
-    ]
-    copy_done = [torch.cuda.Event(enable_timing=False), torch.cuda.Event(enable_timing=False)]
-
-    # Pre-copy symbols to CPU once for host encoders
-    X_cpu = X.detach().to("cpu").numpy().astype(np.int32, copy=False)
-
-    # Prime step 1 probabilities
-    with torch.cuda.stream(compute_stream):
-        logits = model.step(prev, inf)
-        if logits.ndim == 3:
-            logits = logits.squeeze(1)
-        probs_gpu = torch.softmax(logits, dim=-1).to(torch.float32)
-
-    with torch.cuda.stream(transfer_stream):
-        transfer_stream.wait_stream(compute_stream)
-        prob_bufs[0].copy_(probs_gpu, non_blocking=True)
-        copy_done[0].record(transfer_stream)
+    # Streaming state (CPU cache structure)
+    caches = model.init_stream(max_len=maxL, batch_size=N, device=device, dtype=torch.float32)
+    prev = X[:, 0].clone()  # [N] CPU
 
     total_steps = sum(L - 1 for L in Ls)
-    pbar = tqdm(total=total_steps, disable=not progress, desc=f"Compress (streams x{N})",
+    pbar = tqdm(total=total_steps, disable=not progress, desc=f"Compress (CPU streams x{N})",
                 unit="KB", unit_scale=1/1024, mininterval=0.2)
+
+    X_cpu = X.detach().cpu().numpy().astype(np.int32, copy=False)
 
     def encode_range(r0, r1, t, probs_np):
         for i in range(r0, r1):
@@ -216,17 +194,24 @@ def compress_CPU(
                 sym = int(X_cpu[i, t])
                 encs[i].encode(np.array([sym], dtype=np.int32), fam, probs_np[i:i+1, :])
 
-    cur, nxt = 0, 1
-    with ThreadPoolExecutor(max_workers=num_workers) as pool:
-        for t in range(1, maxL):
-            # Wait for D2H completion of probs(t)
-            copy_done[cur].synchronize()
-            probs_np = prob_bufs[cur].numpy()
+    for t in range(1, maxL):
+        # Determine active lanes
+        active = np.asarray(Ls) > t
+        if not active.any():
+            break
 
-            # Parallel lane-wise encoding on CPU
-            if num_workers > 1:
-                chunk = (N + num_workers - 1) // num_workers
-                futs = []
+        # Compute probabilities on CPU for current prev
+        logits = model.step(prev, caches)
+        if logits.ndim == 3:
+            logits = logits.squeeze(1)
+        probs = torch.softmax(logits, dim=-1).to(torch.float32)
+        probs_np = probs.detach().cpu().numpy()
+
+        # Parallel lane-wise encoding on CPU
+        if num_workers and num_workers > 1:
+            chunk = (N + num_workers - 1) // num_workers
+            futs = []
+            with ThreadPoolExecutor(max_workers=num_workers) as pool:
                 s = 0
                 while s < N:
                     e = min(s + chunk, N)
@@ -234,31 +219,14 @@ def compress_CPU(
                     s = e
                 for f in futs:
                     f.result()
-            else:
-                encode_range(0, N, t, probs_np)
+        else:
+            encode_range(0, N, t, probs_np)
 
-            # Update device prev for active lanes (inference_mode still active)
-            with torch.cuda.stream(compute_stream):
-                lens_mask = (lens_t > t)
-                prev = torch.where(lens_mask, X[:, t], prev)
+        # Update prev only for active lanes
+        lens_mask = torch.from_numpy(active).to(torch.bool)
+        prev = torch.where(lens_mask, X[:, t], prev)
 
-                # Next step probs if any
-                if t < maxL - 1:
-                    logits = model.step(prev, inf)
-                    if logits.ndim == 3:
-                        logits = logits.squeeze(1)
-                    probs_gpu = torch.softmax(logits, dim=-1).to(torch.float32)
-
-            # D2H copy of next probs
-            if t < maxL - 1:
-                with torch.cuda.stream(transfer_stream):
-                    transfer_stream.wait_stream(compute_stream)
-                    prob_bufs[nxt].copy_(probs_gpu, non_blocking=True)
-                    copy_done[nxt].record(transfer_stream)
-
-            # Progress: number of lanes still active at step t
-            pbar.update(int((np.asarray(Ls) > t).sum()))
-            cur, nxt = nxt, cur
+        pbar.update(int(active.sum()))
 
     pbar.close()
     compressed_list = [encs[i].get_compressed() for i in range(N)]
@@ -272,6 +240,8 @@ def decompress_CPU(
     """
     Returns: list[np.ndarray] each (1, L_i) uint8
     """
+    # CPU-only implementation
+    device = "cpu"
     with torch.inference_mode():
         model.eval().to(device)
         N = len(compressed_list)
@@ -295,89 +265,53 @@ def decompress_CPU(
         for i in range(N):
             outs[i][0] = int(first_bytes[i])
 
-        # Streaming state
-        inf = model.init_stream(max_len=maxL, batch_size=N, device=device, dtype=torch.float32)
+        # Streaming state (CPU caches)
+        caches = model.init_stream(max_len=maxL, batch_size=N, device=device, dtype=torch.float32)
         prev = torch.tensor(first_bytes, dtype=torch.long, device=device)
 
-        # CUDA streams and double-buffered pinned host probs
-        compute_stream = torch.cuda.Stream(device=device)
-        transfer_stream = torch.cuda.Stream(device=device)
-        prob_bufs = [
-            torch.empty((N, 256), dtype=torch.float32, pin_memory=True),
-            torch.empty((N, 256), dtype=torch.float32, pin_memory=True),
-        ]
-        copy_done = [torch.cuda.Event(enable_timing=False), torch.cuda.Event(enable_timing=False)]
-
-    # Keep prev on CPU to avoid H2D transfers every step
-    prev_cpu = np.array(first_bytes, dtype=np.int32)
-    
-    # Pre-allocate GPU tensor for batch updates
-    prev_gpu_buf = torch.empty(N, dtype=torch.long, device=device, pin_memory=False)
-
-    with torch.inference_mode():
-        # Prime step 1 probabilities
-        with torch.cuda.stream(compute_stream):
-            logits = model.step(prev, inf)
-            if logits.ndim == 3:
-                logits = logits.squeeze(1)
-            probs_gpu = torch.softmax(logits, dim=-1).to(torch.float32)
-
-        with torch.cuda.stream(transfer_stream):
-            transfer_stream.wait_stream(compute_stream)
-            prob_bufs[0].copy_(probs_gpu, non_blocking=True)
-            copy_done[0].record(transfer_stream)
-
         total_steps = sum(L - 1 for L in full_lens)
-        pbar = tqdm(total=total_steps, disable=not progress, desc=f"Decompress (streams x{N})",
+        pbar = tqdm(total=total_steps, disable=not progress, desc=f"Decompress (CPU streams x{N})",
                     unit="KB", unit_scale=1/1024, mininterval=0.2)
         lens_arr = np.asarray(full_lens, dtype=np.int64)
 
-        def decode_range(r0, r1, t, probs_np):
+        def decode_range(r0, r1, t, probs_np, prev_np):
             for i in range(r0, r1):
                 if t < full_lens[i]:
                     sym = int(decs[i].decode(fam, probs_np[i:i+1, :])[0])
                     outs[i][t] = sym
-                    prev_cpu[i] = sym  # Update CPU copy directly
+                    prev_np[i] = sym
 
-        cur, nxt = 0, 1
-        with ThreadPoolExecutor(max_workers=num_workers) as pool:
-            for t in range(1, maxL):
-                # Wait for D2H completion of probs(t)
-                copy_done[cur].synchronize()
-                probs_np = prob_bufs[cur].numpy()
+        prev_np = np.array(first_bytes, dtype=np.int32)
 
-                # Parallel lane-wise decode on CPU
-                if num_workers > 1:
-                    chunk = (N + num_workers - 1) // num_workers
-                    futs, s = [], 0
+        for t in range(1, maxL):
+            active = lens_arr > t
+            if not active.any():
+                break
+
+            logits = model.step(prev, caches)
+            if logits.ndim == 3:
+                logits = logits.squeeze(1)
+            probs = torch.softmax(logits, dim=-1).to(torch.float32)
+            probs_np = probs.detach().cpu().numpy()
+
+            # Parallel lane-wise decode on CPU
+            if num_workers and num_workers > 1:
+                chunk = (N + num_workers - 1) // num_workers
+                futs, s = [], 0
+                with ThreadPoolExecutor(max_workers=num_workers) as pool:
                     while s < N:
                         e = min(s + chunk, N)
-                        futs.append(pool.submit(decode_range, s, e, t, probs_np))
+                        futs.append(pool.submit(decode_range, s, e, t, probs_np, prev_np))
                         s = e
                     for f in futs:
                         f.result()
-                else:
-                    decode_range(0, N, t, probs_np)
+            else:
+                decode_range(0, N, t, probs_np, prev_np)
 
-                # Launch next step probs if any
-                if t < maxL - 1:
-                    with torch.cuda.stream(compute_stream):
-                        # Single efficient H2D copy from CPU numpy to GPU
-                        prev_gpu_buf.copy_(torch.from_numpy(prev_cpu).to(device, non_blocking=True))
-                        prev = prev_gpu_buf  # Update reference
-                        
-                        logits = model.step(prev, inf)
-                        if logits.ndim == 3:
-                            logits = logits.squeeze(1)
-                        probs_gpu = torch.softmax(logits, dim=-1).to(torch.float32)
+            # Update prev tensor from numpy buffer for next step
+            prev = torch.from_numpy(prev_np).to(torch.long)
 
-                    with torch.cuda.stream(transfer_stream):
-                        transfer_stream.wait_stream(compute_stream)
-                        prob_bufs[nxt].copy_(probs_gpu, non_blocking=True)
-                        copy_done[nxt].record(transfer_stream)
-
-                pbar.update(int((lens_arr > t).sum()))
-                cur, nxt = nxt, cur
+            pbar.update(int(active.sum()))
 
         pbar.close()
         return [o.reshape(1, -1) for o in outs]
