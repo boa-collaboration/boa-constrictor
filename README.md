@@ -174,7 +174,7 @@ GPU speedups
 - `file_path` not found:
   - Update the YAML to point to an existing dataset file. For a smoke test, use a small file first.
 - CUDA out of memory:
-  - Reduce `batch_size`, decrease `seq_len`, or switch to `precision: fp16`. Ensure other processes aren’t using VRAM.
+  - Reduce `batch_size`, decrease `seq_len`. Ensure other processes aren’t using VRAM.
 - Slow throughput on GPU:
   - Increase chunk-level parallelism and batch size, ensure fp16 is enabled, and avoid tiny chunks.
 
