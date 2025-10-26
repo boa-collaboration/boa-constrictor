@@ -176,7 +176,7 @@ GPU speedups
 - CUDA out of memory:
   - Reduce `batch_size`, decrease `seq_len`. Ensure other processes aren’t using VRAM.
 - Slow throughput on GPU:
-  - Increase chunk-level parallelism and batch size, ensure fp16 is enabled, and avoid tiny chunks.
+  - Increase chunk-level parallelism and batch size, and avoid tiny chunks.
 
 
 ## References and further reading
