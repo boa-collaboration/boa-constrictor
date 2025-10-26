@@ -81,7 +81,7 @@ splits: [0.8, 0.1, 0.1]
 
 ## CLI overview
 
-`paper-code/main.py` wires together:
+`main.py` wires together:
 - Reading input bytes
 - Building the model (`BoaConstrictor`) and `ByteDataloader`
 - Splitting into train/val/test (`make_splits`)
