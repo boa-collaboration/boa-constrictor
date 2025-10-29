@@ -6,7 +6,7 @@ file_path: CMS_DATA_float32.bin  # path to the binary dataset to compress/train 
 model_path: cms_experiment_final_model_fp32.pt
 
 progress: true
-device: cpu
+device: cuda
 precision: fp32
 
 dataloader:

@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 
 def BoaConstrictor(d_model=256, num_layers=4, device="cuda"):
-    """ Construct a MambaBytePredictor with smaller model size for Boa experiments. """
+    """ Construct a BoaBytePredictor with smaller model size for Boa experiments. """
     IS_CUDA = torch.cuda.is_available() and device == "cuda"
 
     if IS_CUDA:
@@ -56,7 +56,10 @@ def BoaConstrictor(d_model=256, num_layers=4, device="cuda"):
             )
         def forward(self, x, inference_params=None):
             y = self.ln1(x)
-            y = self.mamba(y, inference_params=inference_params)  # <-- stream cache
+            if IS_CUDA:
+                y = self.mamba(y, inference_params=inference_params)  # <-- stream cache
+            else:
+                y = self.mamba(y)  # no stream cache in CPU version
             y = self.ln2(y)
             y = self.ff(y)
             return x + y
@@ -77,7 +80,7 @@ def BoaConstrictor(d_model=256, num_layers=4, device="cuda"):
                 y = self.ff(y)
                 return x + y, cache
         
-    class MambaBytePredictor(nn.Module):
+    class BoaBytePredictor(nn.Module):
         """ Mamba model adapted to predict the next byte in a sequence. """
         def __init__(self, d_model=256, num_layers=4):
             super().__init__()
@@ -126,7 +129,7 @@ def BoaConstrictor(d_model=256, num_layers=4, device="cuda"):
                     h, caches[i] = blk.step(h, caches[i])  # O(1) per token with cache
                 logits_next = self.head(h)  # [B, 256]
                 return logits_next
-    model = MambaBytePredictor(d_model=d_model, num_layers=num_layers)
+    model = BoaBytePredictor(d_model=d_model, num_layers=num_layers)
     tag_mamba_layers_with_ids(model)
     return model
 

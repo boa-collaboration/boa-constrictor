@@ -1,4 +1,5 @@
 import argparse
+import os
 import time
 from pathlib import Path
 import yaml
@@ -61,6 +62,8 @@ def parse_args():
     p.add_argument('--decompress-only', action='store_true', help='Only run decompression')
     p.add_argument('--show-timings', action='store_true', help='Print timings for each major operation')
     p.add_argument('--verify', action='store_true', help='After decompression, verify bytes match the input file used for compression')
+    p.add_argument('--evaluate', action='store_true', help='After decompression, run evaluation metrics on the compressor model')
+    p.add_argument('--evaluate-only', action='store_true', help='After decompression, run evaluation metrics on the compressor model')
     p.add_argument('--model-path', type=str, default=None, help='Path to a pre-trained model .pt file (state_dict or full model). If provided, training is skipped and the model is loaded')
     return p.parse_args()
 
@@ -155,7 +158,9 @@ def main():
             model_path = (cfg_dir / model_path).resolve()
 
     # Experiment parameters (with sensible defaults)
-    name = config.get('name', 'experiment')
+    # Use the config filename stem as the canonical experiment/model name
+    # so checkpoints are consistently named and retraining can be skipped.
+    name = Path(args.config).stem
     file_path = config.get('file_path', '')
     # Resolve file_path: if it's absolute, use as-is; if relative, interpret
     # it relative to the directory of the resolved config file (so passing
@@ -235,6 +240,12 @@ def main():
             return model
         raise ValueError(f"Unrecognized checkpoint format at {path}")
 
+    # If no explicit model_path was provided, check for an existing final checkpoint
+    default_ckpt = exp_dir / f"{name}_final_model_{precision}.pt"
+    if model_path is None and default_ckpt.exists():
+        model_path = default_ckpt
+        print(f"Found existing checkpoint at {model_path}. Will load and skip training.")
+
     # Training or loading
     if model_path is not None and Path(model_path).exists():
         print(f"Loading pre-trained model from {model_path} and skipping training")
@@ -250,6 +261,26 @@ def main():
               device=device, name=str(exp_dir / name), NUM_EPOCHS=num_epochs, PRECISION=precision, progress=progress)
         timings['training'] = time.perf_counter() - t_start
         print(f"Training complete in {timings['training']:.2f}s")
+
+        # After successful training, persist model_path into the YAML config
+        trained_ckpt = exp_dir / f"{name}_final_model_{precision}.pt"
+        try:
+            cfg_path: Path = Path(args.config)
+            # Write model_path relative to the config directory when possible
+            rel_ckpt = trained_ckpt
+            if trained_ckpt.is_absolute():
+                try:
+                    rel_ckpt = trained_ckpt.relative_to(cfg_path.parent)
+                except Exception:
+                    rel_ckpt = trained_ckpt
+            with open(cfg_path, 'r') as f:
+                cfg_data = yaml.safe_load(f) or {}
+            cfg_data['model_path'] = str(rel_ckpt)
+            with open(cfg_path, 'w') as f:
+                yaml.safe_dump(cfg_data, f)
+            print(f"Updated config with model_path: {rel_ckpt}")
+        except Exception as e:
+            print(f"[WARN] Failed to update config with model_path: {e}")
 
     compress_file_cfg = config.get('compression', {}).get('file_to_compress', '')
     # If blank, use the original dataset file we already loaded
@@ -268,7 +299,7 @@ def main():
     boa = BOA(device, str(exp_dir / f"{name}.boa"), model)
     file_format = compress_file_path.suffix.lstrip('.') or 'bin'
     # Compression
-    if not args.train_only and not args.decompress_only:
+    if not args.train_only and not args.decompress_only and not args.evaluate_only:
         print("Starting compression...")
         t_start = time.perf_counter()
         # Create BOA that writes into the experiment directory
@@ -281,7 +312,7 @@ def main():
         print(f"Compression complete in {timings['compression']:.2f}s")
 
     # Decompression (write decompressed bytes into the experiment directory)
-    if not args.train_only and not args.compress_only:
+    if not args.train_only and not args.compress_only and not args.evaluate_only:
         print("Starting decompression...")
         t_start = time.perf_counter()
         # BoaFile.decompress() returns the original bytes
@@ -315,7 +346,68 @@ def main():
 
     # Note: configs are stored under experiments/<name>/<name>.yaml when created
     # and can be referenced by experiment name via --config <name>. No copy is necessary.
+    if (args.evaluate or args.evaluate_only) and torch.cuda.is_available():
+        from evaluator import CompressionEvaluator
+        print("Starting evaluation...")
+        print("Loading model and data...")
 
+        # Data
+        with open(compress_file_path, 'rb') as rf:
+            data_bytes = rf.read()
+            print(f"Data loaded: {len(data_bytes)/1024/1024:.2f} MB")
+
+
+        # Splits
+        n = len(data_bytes)
+        train_end = int(0.8 * n)
+        val_end   = int(0.9 * n)
+        train_bytes = data_bytes[:train_end]
+        val_bytes   = data_bytes[train_end:val_end]
+        test_bytes  = data_bytes[val_end:]
+
+        eval_seq_len = 1024
+        eval_batch_size = 1
+        train_loader = ByteDataloader(train_bytes, seq_len=eval_seq_len, batch_size=eval_batch_size)
+        val_loader   = ByteDataloader(val_bytes,   seq_len=eval_seq_len, batch_size=eval_batch_size)
+        test_loader  = ByteDataloader(test_bytes,  seq_len=eval_seq_len, batch_size=eval_batch_size)
+
+        # Evaluate & plot all on one figure
+        evaluator = CompressionEvaluator(model, device=device)
+        os.makedirs(f"experiments/{name}/plots", exist_ok=True)
+        curves = evaluator.plot_calibration_curves_multi(
+            {"train": train_loader, "val": val_loader, "test": test_loader},
+            n_bins=20,
+            max_batches=20,            # subset for speed
+            savepath=f"experiments/{name}/plots/calibration_all.png",
+            quantile_bins=False        # set True for equal-mass bins
+        )
+        res = evaluator.plot_topk_accuracy(
+            test_loader, k_max=20, step=1,
+            savepath=f"experiments/{name}/plots/top_k_accuracy.png",
+            annotate_ks=(1, 5, 10)
+        )
+        res = evaluator.plot_confusion_top_bytes(test_loader, top_n=20, normalize="true",
+                                savepath=f"experiments/{name}/plots/byte_confusion_matrix.png")
+        # Also plot original vs decompressed comparison for first few columns to show bit-exactness
+        try:
+            decompressed_path = exp_dir / f"{name}_decompressed.{file_format}"
+            if decompressed_path.exists():
+                evaluator.plot_bit_exact_columns(
+                    original_file=str(compress_file_path),
+                    decompressed_file=str(decompressed_path),
+                    num_cols=4,
+                    dtype='float32',
+                    max_rows=2000,
+                    savepath=f"experiments/{name}/plots/bit_exact_columns.png",
+                )
+            else:
+                print(f"[INFO] Decompressed file not found at {decompressed_path}; skipping bit-exact columns plot.")
+        except Exception as e:
+            print(f"[WARN] Failed to generate bit-exact columns plot: {e}")
+        print("Evaluation complete.")
+    elif not torch.cuda.is_available() and (args.evaluate or args.evaluate_only):
+        print("[WARN] Evaluation requires CUDA; skipping evaluation as no CUDA device is available.")
+        
     if args.show_timings:
         print('\nTimings:')
         for k, v in timings.items():
