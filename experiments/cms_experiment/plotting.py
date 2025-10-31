@@ -66,8 +66,8 @@ def plot_columns(orig_rec, decomp_rec, names, out_dir: Path, nrows_to_plot=200,
 
         if create_hist:
             # Histogram plot (counts vs feature value) + residuals panel
-            fig = plt.figure(figsize=(7, 4.5))
-            gs = fig.add_gridspec(2, 1, height_ratios=[3, 1], hspace=0.5)
+            fig = plt.figure(figsize=(5, 6))
+            gs = fig.add_gridspec(2, 1, height_ratios=[3, 1], hspace=0.25)
             ax_h = fig.add_subplot(gs[0])
             ax_res = fig.add_subplot(gs[1])
 
@@ -88,8 +88,8 @@ def plot_columns(orig_rec, decomp_rec, names, out_dir: Path, nrows_to_plot=200,
             ax_h.legend(fontsize='small')
 
             ax_res.plot(range(rows), residual, color='black', lw=0.5, alpha=0.8)
-            ax_res.set_xlabel('row index (first N)', fontsize=8)
-            ax_res.set_ylabel('$\\Delta$ = original - decompressed', fontsize=8)
+            ax_res.set_xlabel('index', fontsize=8)
+            ax_res.set_ylabel('$\\Delta_{residual}$', fontsize=8)
             ax_res.tick_params(axis='both', labelsize=8)
 
             out_file = out_dir / f"col_{i:02d}_{sanitize_filename(col_name)}_hist.png"

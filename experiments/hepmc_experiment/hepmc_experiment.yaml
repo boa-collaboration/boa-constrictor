@@ -1,6 +1,6 @@
 compression:
   chunks_count: 10000
-  file_to_compress: 'hepmc.hepmc'
+  file_to_compress: hepmc.hepmc
 dataloader:
   batch_size: 5
   seq_len: 10000
@@ -9,6 +9,7 @@ file_path: hepmc_200m.hepmc
 model:
   d_model: 256
   num_layers: 1
+model_path: hepmc_experiment_final_model_fp32.pt
 name: hepmc_experiment
 precision: fp32
 progress: true
