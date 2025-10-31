@@ -14,3 +14,9 @@ experiments/atlas_experiment/*
 !experiments/atlas_experiment/README.md
 !experiments/atlas_experiment/atlas_experiment.yaml
 
+experiments/hepmc_experiment/*
+!experiments/hepmc_experiment/
+!experiments/hepmc_experiment/download.py
+!experiments/hepmc_experiment/README.md
+!experiments/hepmc_experiment/hepmc_experiment.yaml
+

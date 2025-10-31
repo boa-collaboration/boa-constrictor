@@ -9,7 +9,6 @@ file_path: atlas_200m.bin
 model:
   d_model: 256
   num_layers: 1
-model_path: atlas_experiment_final_model_fp32.pt
 name: atlas_experiment
 precision: fp32
 progress: true
