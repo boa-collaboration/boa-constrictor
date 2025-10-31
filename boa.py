@@ -1,5 +1,6 @@
 from pathlib import Path
 import struct, zlib, math, hashlib
+import os
 import numpy as np
 import torch
 
@@ -156,32 +157,115 @@ def BOA(device, filepath: str, model):
             }
 
         def compress(self, data_path: str, seq_size: int = 0, chunks_count: int = 0, progress: bool = True):
-            data = Path(data_path).read_bytes()
-            if isinstance(data, np.ndarray):
-                data_bytes = data.tobytes() if data.dtype == np.uint8 else bytes(data)
-            elif isinstance(data, (bytes, bytearray, memoryview)):
-                data_bytes = bytes(data)
+            # Determine chunking from file size without loading entire file into RAM
+            p = Path(data_path)
+            total_size = p.stat().st_size
+            if total_size <= 0:
+                raise ValueError("Input file is empty")
+
+            # Compute chunk_len and number of chunks similar to _split_to_chunks
+            if seq_size and chunks_count:
+                chunk_len = int(seq_size); n_chunks = math.ceil(total_size / chunk_len)
+            elif seq_size:
+                chunk_len = int(seq_size); n_chunks = math.ceil(total_size / chunk_len)
+            elif chunks_count:
+                n_chunks = max(int(chunks_count), 1); chunk_len = math.ceil(total_size / n_chunks)
             else:
-                raise TypeError("npz['data'] must be bytes-like or uint8 array")
+                raise ValueError("Provide either 'seq_size' or 'chunks_count'.")
 
-            chunks_np, chunk_len = self._split_to_chunks(data_bytes, seq_size=seq_size, chunks_count=chunks_count)
-            
-            x_list = [torch.from_numpy(c).unsqueeze(0).to(device) for c in chunks_np]
+            last_chunk_len = int(total_size - (n_chunks - 1) * chunk_len) if n_chunks > 1 else int(total_size)
+            self.metadata = {
+                'chunk_len': int(chunk_len),
+                'n_chunks': int(n_chunks),
+                'uncompressed_len': int(total_size),
+                'last_chunk_len': int(last_chunk_len if last_chunk_len else chunk_len),
+            }
 
-            compressed_list, first_bytes, _ = compress(
-                self.model, x_list, device=device, progress=progress
-            )
-            compressed_bytes = [_as_bytes(c) for c in compressed_list]
-            first_bytes = [int(b) & 0xFF for b in first_bytes]
+            # Prepare output file and write header
+            fp = self._model_fingerprint()
+            with open(self.filepath, 'wb') as f_out:
+                f_out.write(self.MAGIC)
+                f_out.write(struct.pack('<I', self.VERSION))
+                f_out.write(struct.pack('<I', 0))  # flags
+                f_out.write(struct.pack('<Q', total_size))
+                f_out.write(struct.pack('<I', chunk_len))
+                f_out.write(struct.pack('<I', n_chunks))
+                f_out.write(struct.pack('<I', last_chunk_len))
+                f_out.write(struct.pack('<B', len(fp))); f_out.write(fp)
 
-            ulen = len(data_bytes)
-            last_chunk_len = self.metadata['last_chunk_len']
-            self._write_file(compressed_bytes, first_bytes, ulen, chunk_len, last_chunk_len)
+                payload_start = f_out.tell()
+                offsets: list[int] = []
+                lengths: list[int] = []
+                first_bytes: list[int] = []
+                off = 0
 
-            self.compressed_data = compressed_bytes
+                # Memory-map the input file to avoid loading it into RAM
+                mm = np.memmap(p, dtype=np.uint8, mode='r')
+
+                # Number of chunks to process per batch (streams). Default 5000; can be overridden for demos via env.
+                try:
+                    gpu_streams = int(os.getenv("BOA_GPU_STREAMS", "5000"))
+                except Exception:
+                    gpu_streams = 5000
+                gpu_streams = max(1, min(int(gpu_streams), int(n_chunks)))
+                if progress:
+                    try:
+                        if device == "cuda" and torch.cuda.is_available():
+                            free_mem, total_mem = torch.cuda.mem_get_info()
+                            print(f"[compress] gpu_streams={gpu_streams} (chunk_len={chunk_len}, free={free_mem/2**30:.1f}GiB)")
+                        else:
+                            print(f"[compress] streams (CPU)={gpu_streams} (chunk_len={chunk_len})")
+                    except Exception:
+                        print(f"[compress] streams={gpu_streams}")
+
+                # Process chunks in GPU batches to reduce H2D overhead
+                for batch_start in range(0, n_chunks, gpu_streams):
+                    batch_end = min(batch_start + gpu_streams, n_chunks)
+                    x_list = []
+                    Ls_batch = []
+                    for i in range(batch_start, batch_end):
+                        s = i * chunk_len
+                        e = min(s + chunk_len, total_size)
+                        sl = mm[s:e]
+                        # Torch tensor on CPU; GPU transfer handled inside compress() call
+                        t = torch.from_numpy(np.ascontiguousarray(sl)).unsqueeze(0)
+                        x_list.append(t)
+                        Ls_batch.append(int(e - s))
+
+                    compressed_list, fb_batch, _Ls = compress(
+                        self.model, x_list, device=device, progress=progress
+                    )
+                    # Stream write compressed payload and record offsets/lengths
+                    for j, comp_u32 in enumerate(compressed_list):
+                        # Ensure deterministic little-endian serialization of u32 words
+                        comp_arr = np.asarray(comp_u32, dtype=np.uint32)
+                        if comp_arr.dtype.byteorder == '>':
+                            comp_arr = comp_arr.byteswap().newbyteorder('<')
+                        comp_bytes = comp_arr.tobytes(order='C')
+                        f_out.write(comp_bytes)
+                        offsets.append(off)
+                        lengths.append(len(comp_bytes))
+                        off += len(comp_bytes)
+                    first_bytes.extend(int(b) & 0xFF for b in fb_batch)
+
+                # Build and write index
+                idx = bytearray()
+                idx += self.IDX
+                idx += bytes(first_bytes)  # n bytes
+                prev = 0
+                for o in offsets:
+                    idx += _uvarint_encode(o - prev); prev = o
+                for L in lengths:
+                    idx += _uvarint_encode(L)
+                crc = zlib.crc32(idx) & 0xFFFFFFFF
+                f_out.write(idx)
+                f_out.write(struct.pack('<I', crc))
+
+            # Update object state (do not keep compressed payload in RAM)
+            self.compressed_data = []
             self.first_bytes = first_bytes
-            self.lengths = [chunk_len]*(len(compressed_bytes)-1) + [last_chunk_len]
-            print(f"Compression complete: {len(self.compressed_data)} chunks, chunk_len={chunk_len}, last={last_chunk_len}")
+            self.lengths = [chunk_len] * (n_chunks - 1) + [last_chunk_len]
+            print(f"Compression complete: {n_chunks} chunks, chunk_len={chunk_len}, last={last_chunk_len}")
 
         def read_from_disk(self):
             self._read_file()
@@ -191,13 +275,37 @@ def BOA(device, filepath: str, model):
             self._read_file()
             print(f"Total compressed size from disk: {sum(len(c) for c in self.compressed_data)} bytes")
 
-            # Convert bytes -> uint32 with 4-byte padding for the GPU decoder
-            comp_u32 = [np.frombuffer(_pad4(c), dtype=np.uint32).copy() for c in self.compressed_data]
+            # Decompress in batches to limit GPU memory and align with encoder batch semantics
+            try:
+                gpu_streams = int(os.getenv("BOA_GPU_STREAMS", "5000"))
+            except Exception:
+                gpu_streams = 5000
+            n = len(self.compressed_data)
+            gpu_streams = max(1, min(int(gpu_streams), int(n)))
+            if progress:
+                try:
+                    if device == "cuda" and torch.cuda.is_available():
+                        free_mem, total_mem = torch.cuda.mem_get_info()
+                        print(f"[decompress] gpu_streams={gpu_streams} (free={free_mem/2**30:.1f}GiB)")
+                    else:
+                        print(f"[decompress] streams (CPU)={gpu_streams}")
+                except Exception:
+                    print(f"[decompress] streams={gpu_streams}")
 
-            decoded_list = decompress(
-                self.model, comp_u32, self.lengths, self.first_bytes, device=device, progress=progress
-            )
-            return b"".join(d.tobytes() if hasattr(d, "tobytes") else bytes(d) for d in decoded_list)
+            out_parts: list[bytes] = []
+            for batch_start in range(0, n, gpu_streams):
+                batch_end = min(batch_start + gpu_streams, n)
+                comp_u32_batch = [np.frombuffer(c, dtype='<u4').copy() for c in self.compressed_data[batch_start:batch_end]]
+                lens_batch = self.lengths[batch_start:batch_end]
+                fb_batch = self.first_bytes[batch_start:batch_end]
+
+                decoded_list = decompress(
+                    self.model, comp_u32_batch, lens_batch, fb_batch, device=device, progress=progress
+                )
+                for d in decoded_list:
+                    out_parts.append(d.tobytes() if hasattr(d, "tobytes") else bytes(d))
+
+            return b"".join(out_parts)
 
         def get_metadata(self):
             return dict(self.metadata)

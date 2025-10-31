@@ -163,6 +163,18 @@ GPU speedups
 - Chunk-level parallelism: Schedule multiple chunks concurrently so the GPU is fed continuously; avoid tiny chunks that cause excessive kernel launch overhead.
 - Custom GPU range coder for batch independent compression
 
+### Streaming compression batches
+
+Compression runs in batches of chunks to keep memory usage bounded. By default, the batch size ("gpu_streams") is chosen automatically based on your configuration. For demos or reproducibility, you can force a fixed batch size via an environment variable:
+
+```bash
+# Example: process 10,000 chunks in two streaming batches of 5,000 each
+export BOA_GPU_STREAMS=5000
+python3 main.py --config your_experiment
+```
+
+With `chunks_count: 10000` (or when the input produces 10,000 chunks), this will compress in two waves of 5,000 chunks each, demonstrating the streaming pattern (write-as-you-go with an index finalized at the end).
+
 ## Reproducibility and checkpoints
 
 - The CLI saves/loads model checkpoints according to the `train(...)` implementation. Keep names consistent with your `name` field so compression uses the trained model you expect.

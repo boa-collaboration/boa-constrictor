@@ -64,6 +64,7 @@ def parse_args():
     p.add_argument('--verify', action='store_true', help='After decompression, verify bytes match the input file used for compression')
     p.add_argument('--evaluate', action='store_true', help='After decompression, run evaluation metrics on the compressor model')
     p.add_argument('--evaluate-only', action='store_true', help='After decompression, run evaluation metrics on the compressor model')
+    p.add_argument('--comparison-baseline-only', action='store_true', help='Run LZMA and ZLIB (ultra) baseline compressions on the compression input file, print results, and exit')
     p.add_argument('--model-path', type=str, default=None, help='Path to a pre-trained model .pt file (state_dict or full model). If provided, training is skipped and the model is loaded')
     return p.parse_args()
 
@@ -247,14 +248,14 @@ def main():
         print(f"Found existing checkpoint at {model_path}. Will load and skip training.")
 
     # Training or loading
-    if model_path is not None and Path(model_path).exists():
+    if model_path is not None and Path(model_path).exists() and not args.comparison_baseline_only:
         print(f"Loading pre-trained model from {model_path} and skipping training")
         t_start = time.perf_counter()
         model = _load_model_from_path(model, Path(model_path))
         model = model.to(device)
         timings['load_model'] = time.perf_counter() - t_start
         print(f"Model loaded in {timings['load_model']:.2f}s")
-    elif not args.compress_only and not args.decompress_only:
+    elif not args.compress_only and not args.decompress_only and not args.comparison_baseline_only:
         print(f"Starting training on device=={device}, precision={precision}, epochs={num_epochs}")
         t_start = time.perf_counter()
         train(model, train_loader, val_loader, test_loader, optimizer, criterion,
@@ -264,6 +265,7 @@ def main():
 
         # After successful training, persist model_path into the YAML config
         trained_ckpt = exp_dir / f"{name}_final_model_{precision}.pt"
+        final_model_name = f"{name}_final_model_{precision}.pt"
         try:
             cfg_path: Path = Path(args.config)
             # Write model_path relative to the config directory when possible
@@ -275,7 +277,7 @@ def main():
                     rel_ckpt = trained_ckpt
             with open(cfg_path, 'r') as f:
                 cfg_data = yaml.safe_load(f) or {}
-            cfg_data['model_path'] = str(rel_ckpt)
+            cfg_data['model_path'] = str(final_model_name)
             with open(cfg_path, 'w') as f:
                 yaml.safe_dump(cfg_data, f)
             print(f"Updated config with model_path: {rel_ckpt}")
@@ -296,6 +298,87 @@ def main():
             raise FileNotFoundError(f"Compression input file not found: {cfp}")
         compress_file_path = cfp
 
+    # If the user only wants baseline comparisons, run quick LZMA and ZLIB (ultra) compressions
+    # on the compression input file and print results, then exit.
+    def _run_baseline_comparisons(in_path: Path, out_dir: Path, exp_name: str):
+        import lzma
+        import zlib
+        import uproot
+        import time
+
+        with open(in_path, 'rb') as rf:
+            data = rf.read()
+
+        orig_size = len(data)
+        results = {}
+
+        # LZMA (try EXTREME if available, fall back to preset=9)
+        try:
+            t0 = time.perf_counter()
+            try:
+                comp_lz = lzma.compress(data, preset=9 | getattr(lzma, 'PRESET_EXTREME', 0))
+            except Exception:
+                comp_lz = lzma.compress(data, preset=9)
+            t_lz = time.perf_counter() - t0
+            lz_size = len(comp_lz)
+            lz_path = out_dir / f"{exp_name}.lzma"
+            with open(lz_path, 'wb') as wf:
+                wf.write(comp_lz)
+            results['lzma'] = {'path': str(lz_path), 'size': lz_size, 'time_s': t_lz}
+        except Exception as e:
+            results['lzma'] = {'error': str(e)}
+
+        # ZLIB (max compression level = 9)
+        try:
+            t0 = time.perf_counter()
+            comp_z = zlib.compress(data, level=9)
+            t_z = time.perf_counter() - t0
+            z_size = len(comp_z)
+            z_path = out_dir / f"{exp_name}.zlib"
+            with open(z_path, 'wb') as wf:
+                wf.write(comp_z)
+            results['zlib'] = {'path': str(z_path), 'size': z_size, 'time_s': t_z}
+        except Exception as e:
+            results['zlib'] = {'error': str(e)}
+        if config.get('baseline', {}).get('rntuple', False):
+            try:
+                rntuple_path = out_dir / f"{exp_name}.root"
+                t0 = time.perf_counter()
+                file = uproot.recreate(rntuple_path)
+                rn_data = np.frombuffer(data_bytes)
+                file.mkrntuple("tuple6", {"data": rn_data})
+                file.close()
+                t_rntuple = time.perf_counter() - t0
+                rntuple_size = os.path.getsize(rntuple_path)
+                results['rntuple'] = {'path': str(rntuple_path), 'size': rntuple_size, 'time_s': t_rntuple}
+            except Exception as e:
+                results['rntuple'] = {'error': str(e)}
+
+        # Print a concise summary
+        print("\nBaseline compression results:")
+        print(f"  Original size: {orig_size} bytes")
+        for k in ('lzma', 'zlib', 'rntuple'):
+            r = results.get(k, {})
+            if 'error' in r:
+                print(f"  {k.upper()}: ERROR: {r['error']}")
+                continue
+            size = r['size']
+            t = r['time_s']
+            ratio = orig_size / size if size > 0 else float('inf')
+            print(f"  {k.upper():5} -> size={size} bytes, ratio={ratio:.2f}, time={t:.3f}s, written={r.get('path')}")
+
+        return results
+
+    if args.comparison_baseline_only:
+        try:
+            os.makedirs(exp_dir, exist_ok=True)
+            _run_baseline_comparisons(compress_file_path, exp_dir, name)
+            print("\n--comparison-baseline-only complete. Exiting.")
+            return
+        except Exception as e:
+            print(f"[ERROR] Baseline comparison failed: {e}")
+            return
+
     boa = BOA(device, str(exp_dir / f"{name}.boa"), model)
     file_format = compress_file_path.suffix.lstrip('.') or 'bin'
     # Compression
@@ -308,6 +391,13 @@ def main():
             chunks_count=config.get('compression', {}).get('chunks_count', 1000),
             progress=progress,
         )
+        with open(exp_dir / f"{name}.boa", 'rb') as bf:
+            boa_size = len(bf.read())
+        with open(compress_file_path, 'rb') as rf:
+            original_size = len(rf.read())
+        compression_ratio = original_size / boa_size if boa_size > 0 else float('inf')
+        print(f"Compression ratio: {compression_ratio:.2f}")
+
         timings['compression'] = time.perf_counter() - t_start
         print(f"Compression complete in {timings['compression']:.2f}s")
 

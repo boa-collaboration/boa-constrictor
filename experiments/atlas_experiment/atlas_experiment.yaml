@@ -1,14 +1,15 @@
 compression:
   chunks_count: 10000
-  file_to_compress: ''
+  file_to_compress: 'atlas.bin'
 dataloader:
-  batch_size: 3
-  seq_len: 32768
+  batch_size: 5
+  seq_len: 10000
 device: cuda
-file_path: ATLAS_DATA.bin
+file_path: atlas_200m.bin
 model:
   d_model: 256
-  num_layers: 2
+  num_layers: 1
+model_path: atlas_experiment_final_model_fp32.pt
 name: atlas_experiment
 precision: fp32
 progress: true

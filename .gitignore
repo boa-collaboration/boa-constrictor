@@ -1,3 +1,16 @@
 **/__pycache__/
 **/.venv/
-**/environment/cms_experiment/plots/*
+
+# Keep only specific files in experiments/cms_experiment_lg
+experiments/cms_experiment_lg/*
+!experiments/cms_experiment_lg/
+!experiments/cms_experiment_lg/download.py
+!experiments/cms_experiment_lg/README.md
+!experiments/cms_experiment_lg/cms_experiment_lg.yaml
+
+experiments/atlas_experiment/*
+!experiments/atlas_experiment/
+!experiments/atlas_experiment/download.py
+!experiments/atlas_experiment/README.md
+!experiments/atlas_experiment/atlas_experiment.yaml
+

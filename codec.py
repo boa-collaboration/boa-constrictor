@@ -22,7 +22,7 @@ if IS_CUDA:
         model.eval().to(device)
         N = len(x_list)
         assert N >= 1, "Need at least one chunk."
-        xs = [x.to(device, dtype=torch.long) for x in x_list]
+        xs = [x.to(device, dtype=torch.long, non_blocking=True) for x in x_list]
         for i, x in enumerate(xs):
             assert x.ndim == 2 and x.shape[0] == 1, f"Chunk {i} must be [1, L_i]"
             assert x.shape[1] >= 1, f"Chunk {i} must have length >= 1"
