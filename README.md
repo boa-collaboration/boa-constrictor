@@ -38,7 +38,12 @@ Useful flags:
 - `--precision fp32|fp16|fp8` to override compute precision (training only)
 - `--train-only`, `--compress-only`, `--decompress-only` to run specific stages
 - `--model-path /path/to/model.pt` to load a pre-trained checkpoint and skip training (also supported via `model_path` in the YAML)
-- `--verify` to verify the files after compression-decompression cycle 
+- `--verify` to verify the files after compression-decompression cycle
+- `--evaluate`, `--evaluate-only` to evaluate performance of the compression model
+- `--comparison-baseline-only` to run LZMA and ZLIB on the dataset as baselines
+
+> [!WARNING]  
+Currently training can only be done on a CUDA-Compatible GPU!
 
 ## Config file structure
 
