@@ -194,3 +194,26 @@ With `chunks_count: 10000` (or when the input produces 10,000 chunks), this will
 ## References and further reading
 - Range coding (arithmetic coding): classic papers and tutorials provide in-depth renormalization details and proofs.
 - Neural compression literature for modeling bytes/sequences with transformers and state-space models (e.g., Mamba).
+
+## Disclosure of Delegation to Generative AI
+
+The authors declare the use of generative AI in the research and writing process. According to the GAIDeT taxonomy (2025), the following tasks were delegated to GAI tools under **full** human supervision:
+
+- Feasibility assessment and risk evaluation
+- Preliminary hypothesis testing
+- Evaluation of the novelty of the research and identification of gaps
+- Code generation
+- Code optimisation
+- Creation of algorithms for data analysis
+- Visualization
+- Proofreading and editing
+- Summarising text
+- Adapting and adjusting emotional tone
+- Reformatting
+- Preparation of press releases and outreach materials
+- Quality assessment
+
+The GAI tool used were: ChatGPT-5, Gemini 2.5 Pro, Claude Sonnet 4.5.
+Responsibility for the final manuscript lies entirely with the authors.
+GAI tools are not listed as authors and do not bear responsibility for the final outcomes.
+Declaration submitted by: Akshat Gupta
