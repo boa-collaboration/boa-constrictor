@@ -48,7 +48,7 @@ def reshape_to_records(arr: np.ndarray, ncols: int):
 
 def plot_columns(orig_rec, decomp_rec, names, out_dir: Path, nrows_to_plot=200,
                  alpha_orig=0.6, alpha_decomp=0.9,
-                 create_hist=True, bins=50, hist_log=False):
+                 create_hist=True, bins=20, hist_log=False):
     out_dir.mkdir(parents=True, exist_ok=True)
     ncols = orig_rec.shape[1]
     # limit rows
@@ -181,7 +181,7 @@ def main():
     p.add_argument("--alpha-original", type=float, default=0.6, help="Alpha/transparency for original histogram (default: 0.6)")
     p.add_argument("--alpha-decompressed", type=float, default=0.9, help="Alpha/transparency for decompressed histogram (default: 0.9)")
     # histogram options
-    p.add_argument("--bins", type=int, default=100, help="Number of bins for histograms (default: 100)")
+    p.add_argument("--bins", type=int, default=50, help="Number of bins for histograms (default: 100)")
     p.add_argument("--no-hist", dest='hist', action='store_false', help="Do not create histogram plots")
     p.add_argument("--hist-log", dest='hist_log', action='store_true', help="Use log scale for histogram counts")
     p.add_argument("--style", choices=["none", "atlas", "hep", "cms", "mplhep"], default="hep",
