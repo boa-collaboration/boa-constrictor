@@ -9,14 +9,14 @@ file_path: hepmc_200m.hepmc
 model:
   d_model: 256
   num_layers: 1
-model_path: hepmc_experiment_final_model_fp32.pt
 name: hepmc_experiment
 precision: fp32
 progress: true
+use_vocab_subset: false
 splits:
 - 0.8
 - 0.1
 - 0.1
 training:
-  epochs: 10
+  epochs: 1
   lr: 0.0005

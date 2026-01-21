@@ -100,6 +100,7 @@ def main():
         lr = _prompt("Learning rate", 5e-4, float)
         epochs = _prompt("Epochs", 10, int)
         chunks_count = _prompt("Compression chunks_count", 1000, int)
+        use_vocab_subset = _prompt("Use vocab subset (true/false)", "false", lambda s: s.lower() in ("1","true","yes"))
         compress_file = _prompt("File to compress (leave blank to use dataset file)", "", lambda s: s if s != "" else "")
         splits_in = _prompt("Data splits as comma-separated (train,val,test)", "0.8,0.1,0.1")
         try:
@@ -120,6 +121,7 @@ def main():
             'model': {'d_model': int(d_model), 'num_layers': int(num_layers)},
             'training': {'lr': float(lr), 'epochs': int(epochs)},
             'compression': {'chunks_count': int(chunks_count), 'file_to_compress': compress_file},
+            'use_vocab_subset': bool(use_vocab_subset),
             'splits': splits
         }
 
@@ -182,6 +184,7 @@ def main():
     num_layers = config.get('model', {}).get('num_layers', 8)
     lr = float(config.get('training', {}).get('lr', 5e-4))
     num_epochs = config.get('training', {}).get('epochs', 50)
+    use_vocab_subset = config.get('use_vocab_subset', False)
 
     timings = {}
 
@@ -217,9 +220,12 @@ def main():
         data_bytes_final = f.read()
     # Compute vocabulary and remap
     unique_bytes = sorted(list(set(data_bytes_final)))
-    vocab_size = len(unique_bytes)
-    print(f"Found {vocab_size} unique bytes in dataset.")
-    
+    if use_vocab_subset:
+        print(f"Using vocab subset of size {len(unique_bytes)} out of 256 possible bytes.")
+        vocab_size = len(unique_bytes)
+        print(f"Found {vocab_size} unique bytes in dataset.")
+    else:
+        vocab_size = 256
     byte_to_idx = {b: i for i, b in enumerate(unique_bytes)}
     idx_to_byte = {i: b for i, b in enumerate(unique_bytes)}
     
@@ -545,6 +551,11 @@ def main():
         with open(compress_file_path, 'rb') as rf:
             data_bytes = rf.read()
             print(f"Data loaded: {len(data_bytes)/1024/1024:.2f} MB")
+
+        if use_vocab_subset and vocab_size < 256 and lookup is not None:
+            print(f"Remapping evaluation data to {vocab_size} vocab size...")
+            arr = np.frombuffer(data_bytes, dtype=np.uint8)
+            data_bytes = lookup[arr].tobytes()
 
 
         # Splits
