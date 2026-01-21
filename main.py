@@ -216,25 +216,27 @@ def main():
         if not cfp.exists():
             raise FileNotFoundError(f"Compression input file not found: {cfp}")
         compress_file_path = cfp
-    with open(compress_file_path, 'rb') as f:
-        data_bytes_final = f.read()
-    # Compute vocabulary and remap
-    unique_bytes = sorted(list(set(data_bytes_final)))
+
+    # Compute vocabulary and remap (training data only)
     if use_vocab_subset:
-        print(f"Using vocab subset of size {len(unique_bytes)} out of 256 possible bytes.")
+        unique_bytes = sorted(list(set(data_bytes)))
         vocab_size = len(unique_bytes)
-        print(f"Found {vocab_size} unique bytes in dataset.")
+        print(f"Using vocab subset of size {vocab_size} out of 256 possible bytes.")
+        byte_to_idx = {b: i for i, b in enumerate(unique_bytes)}
+        idx_to_byte = {i: b for i, b in enumerate(unique_bytes)}
+
+        # Remap training data
+        arr = np.frombuffer(data_bytes, dtype=np.uint8)
+        lookup = np.zeros(256, dtype=np.uint8)
+        for b, idx in byte_to_idx.items():
+            lookup[b] = idx
+        data_bytes = lookup[arr].tobytes()
     else:
         vocab_size = 256
-    byte_to_idx = {b: i for i, b in enumerate(unique_bytes)}
-    idx_to_byte = {i: b for i, b in enumerate(unique_bytes)}
-    
-    # Remap data
-    arr = np.frombuffer(data_bytes, dtype=np.uint8)
-    lookup = np.zeros(256, dtype=np.uint8)
-    for b, idx in byte_to_idx.items():
-        lookup[b] = idx
-    data_bytes = lookup[arr].tobytes()
+        unique_bytes = None
+        byte_to_idx = None
+        idx_to_byte = None
+        lookup = None
 
     # Prepare experiment output directory and filenames (needed before optional training)
     experiments_root = Path(config.get('experiments_root', 'experiments'))

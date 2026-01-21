@@ -12,11 +12,11 @@ model:
 name: hepmc_experiment
 precision: fp32
 progress: true
-use_vocab_subset: false
 splits:
 - 0.8
 - 0.1
 - 0.1
 training:
-  epochs: 1
+  epochs: 10
   lr: 0.0005
+use_vocab_subset: false
