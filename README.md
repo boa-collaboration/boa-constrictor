@@ -200,6 +200,40 @@ With `chunks_count: 10000` (or when the input produces 10,000 chunks), this will
 - Range coding (arithmetic coding): classic papers and tutorials provide in-depth renormalization details and proofs.
 - Neural compression literature for modeling bytes/sequences with transformers and state-space models (e.g., Mamba).
 
+## Citation
+If you use this codebase, or otherwise find our work valuable, please cite BOA Constrictor:
+```
+@misc{gupta2025boaconstrictormambabasedlossless,
+      title={BOA Constrictor: A Mamba-based lossless compressor for High Energy Physics data}, 
+      author={Akshat Gupta and Caterina Doglioni and Thomas Joseph Elliott},
+      year={2025},
+      eprint={2511.11337},
+      archivePrefix={arXiv},
+      primaryClass={physics.comp-ph},
+      url={https://arxiv.org/abs/2511.11337}, 
+}
+@software{gupta_2025_17571973,
+  author       = {Gupta, Akshat and
+                  Doglioni, Caterina and
+                  Elliott, Thomas},
+  title        = {Boa Constrictor: A Mamba-based Lossless Compressor
+                   for High Energy Physics data
+                  },
+  month        = nov,
+  year         = 2025,
+  publisher    = {Zenodo},
+  version      = {v1.0.0},
+  doi          = {10.5281/zenodo.17571973},
+  url          = {https://doi.org/10.5281/zenodo.17571973},
+  swhid        = {swh:1:dir:7273b2950222286fe7622e7c545a5806863d1afa
+                   ;origin=https://doi.org/10.5281/zenodo.17571972;vi
+                   sit=swh:1:snp:6b782111318d9521b182d6fab427ad97d9ea
+                   17ad;anchor=swh:1:rel:355c1a3afc7bb7536829745e9c53
+                   0fe831265922;path=boa-constrictor-1.0.0
+                  },
+}
+```
+
 ## Disclosure of Delegation to Generative AI
 
 The authors declare the use of generative AI in the research and writing process. According to the GAIDeT taxonomy (2025), the following tasks were delegated to GAI tools under **full** human supervision:
