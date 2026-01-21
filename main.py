@@ -2,6 +2,7 @@ import argparse
 import os
 import time
 from pathlib import Path
+from networkx import config
 import yaml
 import numpy as np
 import torch
@@ -199,6 +200,35 @@ def main():
 
     timings['read_bytes'] = time.perf_counter() - t0
     print(f"Read {len(data_bytes)} bytes from {file_path} in {timings['read_bytes']:.2f}s")
+    compress_file_cfg = config.get('compression', {}).get('file_to_compress', '')
+    # If blank, use the original dataset file we already loaded
+    if not compress_file_cfg:
+        compress_file_path = file_path
+    else:
+        # Resolve compress_file relative to config dir when relative
+        cfp = Path(compress_file_cfg)
+        cfg_dir = Path(args.config).parent if args.config is not None else Path.cwd()
+        if not cfp.is_absolute():
+            cfp = (cfg_dir / cfp).resolve()
+        if not cfp.exists():
+            raise FileNotFoundError(f"Compression input file not found: {cfp}")
+        compress_file_path = cfp
+    with open(compress_file_path, 'rb') as f:
+        data_bytes_final = f.read()
+    # Compute vocabulary and remap
+    unique_bytes = sorted(list(set(data_bytes_final)))
+    vocab_size = len(unique_bytes)
+    print(f"Found {vocab_size} unique bytes in dataset.")
+    
+    byte_to_idx = {b: i for i, b in enumerate(unique_bytes)}
+    idx_to_byte = {i: b for i, b in enumerate(unique_bytes)}
+    
+    # Remap data
+    arr = np.frombuffer(data_bytes, dtype=np.uint8)
+    lookup = np.zeros(256, dtype=np.uint8)
+    for b, idx in byte_to_idx.items():
+        lookup[b] = idx
+    data_bytes = lookup[arr].tobytes()
 
     # Prepare experiment output directory and filenames (needed before optional training)
     experiments_root = Path(config.get('experiments_root', 'experiments'))
@@ -206,7 +236,7 @@ def main():
     exp_dir.mkdir(parents=True, exist_ok=True)
 
     # Setup model, dataloaders, optimizer, loss
-    model = BoaConstrictor(d_model=d_model, num_layers=num_layers, device=device)
+    model = BoaConstrictor(d_model=d_model, num_layers=num_layers, vocab_size=vocab_size, device=device)
 
     dataloader = ByteDataloader(data_bytes, seq_len=seq_len, batch_size=batch_size, device=device)
 
@@ -242,47 +272,80 @@ def main():
         raise ValueError(f"Unrecognized checkpoint format at {path}")
 
     # If no explicit model_path was provided, check for an existing final checkpoint
+    start_epoch = 1
+    resume_training = False
+    
     default_ckpt = exp_dir / f"{name}_final_model_{precision}.pt"
-    if model_path is None and default_ckpt.exists():
-        model_path = default_ckpt
-        print(f"Found existing checkpoint at {model_path}. Will load and skip training.")
+    if model_path is None:
+        if default_ckpt.exists():
+            model_path = default_ckpt
+            print(f"Found existing checkpoint at {model_path}. Will load and skip training.")
+        else:
+            # Check for intermediate checkpoints
+            candidates = list(exp_dir.glob(f"{name}_*_Checkpoint_epoch_*_{precision}.pt"))
+            if candidates:
+                def _get_epoch_from_path(p: Path) -> int:
+                    parts = p.stem.split('_')
+                    if 'epoch' in parts:
+                        try:
+                            return int(parts[parts.index('epoch') + 1])
+                        except (ValueError, IndexError):
+                            pass
+                    return 0
+
+                latest_ckpt = max(candidates, key=_get_epoch_from_path)
+                latest_epoch = _get_epoch_from_path(latest_ckpt)
+                
+                if latest_epoch > 0:
+                    model_path = latest_ckpt
+                    if latest_epoch < num_epochs:
+                        start_epoch = latest_epoch + 1
+                        resume_training = True
+                        print(f"Found intermediate checkpoint at {model_path}. Resuming training from epoch {start_epoch}.")
+                    else:
+                        print(f"Found checkpoint at {model_path} (epoch {latest_epoch} >= {num_epochs}). Will load and skip training.")
 
     # Training or loading
     if model_path is not None and Path(model_path).exists() and not args.comparison_baseline_only:
-        print(f"Loading pre-trained model from {model_path} and skipping training")
+        print(f"Loading pre-trained model from {model_path}")
+        if not resume_training:
+            print("Skipping training (final model or explicit path provided).")
+        
         t_start = time.perf_counter()
         model = _load_model_from_path(model, Path(model_path))
         model = model.to(device)
         timings['load_model'] = time.perf_counter() - t_start
         print(f"Model loaded in {timings['load_model']:.2f}s")
-    elif not args.compress_only and not args.decompress_only and not args.comparison_baseline_only:
-        print(f"Starting training on device=={device}, precision={precision}, epochs={num_epochs}")
-        t_start = time.perf_counter()
-        train(model, train_loader, val_loader, test_loader, optimizer, criterion,
-              device=device, name=str(exp_dir / name), NUM_EPOCHS=num_epochs, PRECISION=precision, progress=progress)
-        timings['training'] = time.perf_counter() - t_start
-        print(f"Training complete in {timings['training']:.2f}s")
 
-        # After successful training, persist model_path into the YAML config
-        trained_ckpt = exp_dir / f"{name}_final_model_{precision}.pt"
-        final_model_name = f"{name}_final_model_{precision}.pt"
-        try:
-            cfg_path: Path = Path(args.config)
-            # Write model_path relative to the config directory when possible
-            rel_ckpt = trained_ckpt
-            if trained_ckpt.is_absolute():
-                try:
-                    rel_ckpt = trained_ckpt.relative_to(cfg_path.parent)
-                except Exception:
-                    rel_ckpt = trained_ckpt
-            with open(cfg_path, 'r') as f:
-                cfg_data = yaml.safe_load(f) or {}
-            cfg_data['model_path'] = str(final_model_name)
-            with open(cfg_path, 'w') as f:
-                yaml.safe_dump(cfg_data, f)
-            print(f"Updated config with model_path: {rel_ckpt}")
-        except Exception as e:
-            print(f"[WARN] Failed to update config with model_path: {e}")
+    if not args.compress_only and not args.decompress_only and not args.comparison_baseline_only:
+        if model_path is None or resume_training:
+            print(f"Starting training on device=={device}, precision={precision}, epochs={num_epochs}, start_epoch={start_epoch}")
+            t_start = time.perf_counter()
+            train(model, train_loader, val_loader, test_loader, optimizer, criterion,
+                  device=device, name=str(exp_dir / name), NUM_EPOCHS=num_epochs, PRECISION=precision, progress=progress, start_epoch=start_epoch, vocab_size=vocab_size)
+            timings['training'] = time.perf_counter() - t_start
+            print(f"Training complete in {timings['training']:.2f}s")
+
+            # After successful training, persist model_path into the YAML config
+            trained_ckpt = exp_dir / f"{name}_final_model_{precision}.pt"
+            final_model_name = f"{name}_final_model_{precision}.pt"
+            try:
+                cfg_path: Path = Path(args.config)
+                # Write model_path relative to the config directory when possible
+                rel_ckpt = trained_ckpt
+                if trained_ckpt.is_absolute():
+                    try:
+                        rel_ckpt = trained_ckpt.relative_to(cfg_path.parent)
+                    except Exception:
+                        rel_ckpt = trained_ckpt
+                with open(cfg_path, 'r') as f:
+                    cfg_data = yaml.safe_load(f) or {}
+                cfg_data['model_path'] = str(final_model_name)
+                with open(cfg_path, 'w') as f:
+                    yaml.safe_dump(cfg_data, f)
+                print(f"Updated config with model_path: {rel_ckpt}")
+            except Exception as e:
+                print(f"[WARN] Failed to update config with model_path: {e}")
 
     compress_file_cfg = config.get('compression', {}).get('file_to_compress', '')
     # If blank, use the original dataset file we already loaded
@@ -384,29 +447,66 @@ def main():
     # Compression
     if not args.train_only and not args.decompress_only and not args.evaluate_only:
         print("Starting compression...")
-        t_start = time.perf_counter()
-        # Create BOA that writes into the experiment directory
-        boa.compress(
-            data_path=str(compress_file_path),
-            chunks_count=config.get('compression', {}).get('chunks_count', 1000),
-            progress=progress,
-        )
-        with open(exp_dir / f"{name}.boa", 'rb') as bf:
-            boa_size = len(bf.read())
-        with open(compress_file_path, 'rb') as rf:
-            original_size = len(rf.read())
-        compression_ratio = original_size / boa_size if boa_size > 0 else float('inf')
-        print(f"Compression ratio: {compression_ratio:.2f}")
+        
+        target_compress_path = compress_file_path
+        temp_compress_path = None
+        
+        if vocab_size < 256:
+            print(f"Remapping compression input to {vocab_size} vocab size...")
+            with open(compress_file_path, 'rb') as f:
+                c_data = f.read()
+            
+            # Check if all bytes in c_data are in vocab
+            c_unique = set(c_data)
+            if not c_unique.issubset(set(unique_bytes)):
+                 print("[ERROR] Compression input contains bytes not seen in training data! Cannot compress.")
+                 target_compress_path = None
+            else:
+                c_arr = np.frombuffer(c_data, dtype=np.uint8)
+                c_remapped = lookup[c_arr].tobytes()
+                temp_compress_path = exp_dir / f"temp_remapped_{compress_file_path.name}"
+                with open(temp_compress_path, 'wb') as f:
+                    f.write(c_remapped)
+                target_compress_path = temp_compress_path
 
-        timings['compression'] = time.perf_counter() - t_start
-        print(f"Compression complete in {timings['compression']:.2f}s")
+        if target_compress_path:
+            t_start = time.perf_counter()
+            # Create BOA that writes into the experiment directory
+            boa.compress(
+                data_path=str(target_compress_path),
+                chunks_count=config.get('compression', {}).get('chunks_count', 1000),
+                progress=progress,
+            )
+            with open(exp_dir / f"{name}.boa", 'rb') as bf:
+                boa_size = len(bf.read())
+            with open(compress_file_path, 'rb') as rf:
+                original_size = len(rf.read())
+            compression_ratio = original_size / boa_size if boa_size > 0 else float('inf')
+            print(f"Compression ratio: {compression_ratio:.2f}")
+
+            timings['compression'] = time.perf_counter() - t_start
+            print(f"Compression complete in {timings['compression']:.2f}s")
+            
+            if temp_compress_path and temp_compress_path.exists():
+                temp_compress_path.unlink()
 
     # Decompression (write decompressed bytes into the experiment directory)
     if not args.train_only and not args.compress_only and not args.evaluate_only:
         print("Starting decompression...")
         t_start = time.perf_counter()
-        # BoaFile.decompress() returns the original bytes
+        # BoaFile.decompress() returns the original bytes (which are remapped indices here)
         decompressed_bytes = boa.decompress(progress=progress)
+        
+        if vocab_size < 256:
+             print(f"Remapping decompressed output back to original bytes...")
+             # Inverse mapping
+             inv_lookup = np.zeros(256, dtype=np.uint8)
+             for idx, b in idx_to_byte.items():
+                 inv_lookup[idx] = b
+             
+             d_arr = np.frombuffer(decompressed_bytes, dtype=np.uint8)
+             decompressed_bytes = inv_lookup[d_arr].tobytes()
+
         out_path = exp_dir / f"{name}_decompressed.{file_format}"
         with open(out_path, 'wb') as outf:
             outf.write(decompressed_bytes)

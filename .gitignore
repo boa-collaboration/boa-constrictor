@@ -20,3 +20,20 @@ experiments/hepmc_experiment/*
 !experiments/hepmc_experiment/README.md
 !experiments/hepmc_experiment/hepmc_experiment.yaml
 
+experiments/cegenome_experiment/*
+experiments/cegenome_experiment
+
+experiments/music_experiment/*
+experiments/music_experiment
+
+experiments/camel_experiment/*
+!experiments/camel_experiment/
+!experiments/camel_experiment/download_camel.py
+!experiments/camel_experiment/README.md
+!experiments/camel_experiment/camel_experiment.yaml
+
+experiments/cfd_experiment/*
+!experiments/cfd_experiment/
+!experiments/cfd_experiment/download_cfd.py
+!experiments/cfd_experiment/README.md
+!experiments/cfd_experiment/cfd_experiment.yaml

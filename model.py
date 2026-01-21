@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-def BoaConstrictor(d_model=256, num_layers=4, device="cuda"):
+def BoaConstrictor(d_model=256, num_layers=4, vocab_size=256, device="cuda"):
     """ Construct a BoaBytePredictor with smaller model size for Boa experiments. """
     IS_CUDA = torch.cuda.is_available() and device == "cuda"
 
@@ -82,16 +82,16 @@ def BoaConstrictor(d_model=256, num_layers=4, device="cuda"):
         
     class BoaBytePredictor(nn.Module):
         """ Mamba model adapted to predict the next byte in a sequence. """
-        def __init__(self, d_model=256, num_layers=4):
+        def __init__(self, d_model=256, num_layers=4, vocab_size=256):
             super().__init__()
-            # Embedding for 256 possible bytes (0-255)
-            self.embedding = nn.Embedding(256, d_model)
+            # Embedding for vocab_size possible bytes
+            self.embedding = nn.Embedding(vocab_size, d_model)
             self.blocks = nn.ModuleList([MambaBlock(d_model) for _ in range(num_layers)])
             self.head = nn.Sequential(
                 nn.Linear(d_model, d_model),
                 nn.ReLU(),
-                # Output logits for each of the 256 possible next bytes
-                nn.Linear(d_model, 256)
+                # Output logits for each of the vocab_size possible next bytes
+                nn.Linear(d_model, vocab_size)
             )
 
         def forward(self, x, inference_params=None):
@@ -112,7 +112,7 @@ def BoaConstrictor(d_model=256, num_layers=4, device="cuda"):
                 h = x
                 for blk in self.blocks:
                     h = blk(h, inference_params=inf)      # O(1) per token (cached)
-                logits_next = self.head(h).squeeze(1)     # [B, 256]
+                logits_next = self.head(h).squeeze(1)     # [B, vocab_size]
                 bump_offset(inf, 1)                       # advance stream
                 return logits_next
         else:
@@ -127,9 +127,9 @@ def BoaConstrictor(d_model=256, num_layers=4, device="cuda"):
                 h = self.embedding(byte_t)  # [B, D]
                 for i, blk in enumerate(self.blocks):
                     h, caches[i] = blk.step(h, caches[i])  # O(1) per token with cache
-                logits_next = self.head(h)  # [B, 256]
+                logits_next = self.head(h)  # [B, vocab_size]
                 return logits_next
-    model = BoaBytePredictor(d_model=d_model, num_layers=num_layers)
+    model = BoaBytePredictor(d_model=d_model, num_layers=num_layers, vocab_size=vocab_size)
     tag_mamba_layers_with_ids(model)
     return model
 

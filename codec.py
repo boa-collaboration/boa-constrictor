@@ -39,8 +39,9 @@ if IS_CUDA:
         lens_t = torch.tensor(Ls, device=device, dtype=torch.long)
 
         # GPU batch range encoder (no D2H for probs/symbols)
-        # K = 256 for bytes
-        batch = gr.gpu.queue.RangeCoderBatch(N, 256, maxL)
+        # K = vocab_size for bytes
+        vocab_size = model.embedding.num_embeddings
+        batch = gr.gpu.queue.RangeCoderBatch(N, vocab_size, maxL)
 
         # Streaming state
         inf = model.init_stream(max_len=maxL, batch_size=N, device=device, dtype=torch.float32)
@@ -101,7 +102,8 @@ if IS_CUDA:
             lens_t = torch.tensor(full_lens, device=device, dtype=torch.long)
 
             # Initialize GPU batch decoder from compressed streams (no D2H for probs)
-            dec = gr.gpu.queue.RangeCoderBatch(N, 256, maxL)
+            vocab_size = model.embedding.num_embeddings
+            dec = gr.gpu.queue.RangeCoderBatch(N, vocab_size, maxL)
 
             # Output buffer fully on GPU; we copy to host only at the end
             outs_gpu = torch.empty((N, maxL), dtype=torch.uint8, device=device)
