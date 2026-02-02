@@ -11,6 +11,10 @@ Key entrypoints:
 - CLI: `main.py`
 - Example config: `experiments/cms_experiment/cms_experiment.yaml`
 
+> [!NOTE]  
+> **Reference implementation for GPU Portability**  
+> The `portability_solved_cpp` folder contains a reference implementation of BOA using the Mamba network in C++. This implementation specifically solves portability issues on GPUs for CUDA. Please note that it includes only inference/decompression logic and does not contain code for training.
+
 
 ## Quick start
 

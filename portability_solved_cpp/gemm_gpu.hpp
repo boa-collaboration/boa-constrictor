@@ -1,0 +1,178 @@
+#pragma once
+
+#include <cuda_runtime.h>
+#include <stdio.h>
+
+// ==========================================
+// Mamba Configuration
+// ==========================================
+struct MambaConfig {
+    int d_model;
+    int n_layers;
+    int d_state = 16;
+    int expand_factor = 2;
+    int d_conv = 4;
+    int dt_rank = 0; // if 0, set to ceil(d_model / 16)
+    
+    // Calulated
+    int d_inner;
+    bool use_rmsnorm = true;
+
+    MambaConfig() : d_model(256), n_layers(4) {
+        update();
+    }
+
+    MambaConfig(int d_model, int n_layers) : d_model(d_model), n_layers(n_layers) {
+        if (dt_rank == 0) dt_rank = (d_model + 15) / 16;
+        d_inner = expand_factor * d_model;
+    }
+    
+    void update() {
+        if (dt_rank == 0) dt_rank = (d_model + 15) / 16;
+        d_inner = expand_factor * d_model;
+    }
+};
+
+#define CHECK_CUDA(call) \
+    do { \
+        cudaError_t err = call; \
+        if (err != cudaSuccess) { \
+            fprintf(stderr, "CUDA error at %s:%d: %s\n", __FILE__, __LINE__, cudaGetErrorString(err)); \
+            exit(1); \
+        } \
+    } while (0)
+
+#ifndef checkCudaErrors
+#define checkCudaErrors(call) CHECK_CUDA(call)
+#endif
+
+#ifndef GPU_SYNC
+#define GPU_SYNC 0
+#endif
+
+#ifndef GPU_FAST_EXP
+#define GPU_FAST_EXP 0
+#endif
+
+#ifndef GPU_SOFTMAX_LUT
+#define GPU_SOFTMAX_LUT 0
+#endif
+
+#ifndef GPU_REPRO_MATH
+#define GPU_REPRO_MATH 0
+#endif
+
+#ifndef GPU_DEBUG_LOGITS
+#define GPU_DEBUG_LOGITS 0
+#endif
+
+
+#if GPU_SYNC
+#define GPU_DEVICE_SYNC() checkCudaErrors(cudaDeviceSynchronize())
+#else
+#define GPU_DEVICE_SYNC() do {} while(0)
+#endif
+
+// Structs
+// Structs
+struct RCState {
+    unsigned long long lower;
+    unsigned long long range;
+    int inverted_num;
+    unsigned int first_inv_lower_word;
+    int write_idx_words;
+};
+
+// GPU Kernel Declarations (Sequential/Legacy)
+void gemm_gpu_naive(const float* A, const float* B, float* C, int M, int N, int K);
+void gemm_gpu_tiled(const float* A, const float* B, float* C, int M, int N, int K);
+void gemm_gpu_optimized(const float* A, const float* B, float* C, int M, int N, int K);
+
+void gpu_gelu(float* x, int N);
+void gpu_relu(float* x, int N);
+void gpu_add_bias(float* x, const float* b, int M, int N); // M rows, N cols, bias [N]
+void gpu_softmax(float* x, int M, int N);
+void gpu_layernorm(float* x, const float* w, const float* b, int N);
+
+void gpu_mamba_conv1d(const float* x_in, float* state, const float* weight, const float* bias, float* out, int d_inner, int d_conv);
+void gpu_mamba_conv1d_chunk(const float* x, float* state, const float* weight, const float* bias, float* out, int Batch, int Length, int Dim, int Kernel, int x_stride);
+
+void gpu_mamba_ssm(const float* x, const float* dt, const float* A_log, const float* D, 
+                   const float* B, const float* C, float* state, float* out, 
+                   int d_inner, int d_state);
+void gpu_mamba_ssm_chunk(const float* u, const float* dt, const float* A_log, const float* D,
+                         const float* B, const float* C, float* state, float* out,
+                         size_t Batch, int Length, int Dim, int State);
+
+void gpu_add_bias_softplus(float* x, const float* b, int N);
+void gpu_gate(float* y, const float* z, int N);
+void gpu_gate_strided(float* y, const float* z, int d_inner, int z_stride, size_t total);
+
+void gemv_gpu_repro(const float* A, const float* B, float* C, int N, int K);
+
+// Batched Kernels
+void gemm_gpu_batch(const float* A, const float* B, float* C, size_t batch, int K, int N); 
+void gemm_gpu_batch_strided(const float* A, int lda, const float* B, int ldb, float* C, int ldc, size_t batch, int K, int N);
+void gpu_copy_strided(const float* src, float* dst, int src_stride, int width, size_t batch);
+
+void gpu_embedding_lookup_batch(const int* tokens, const float* embedding, float* out, int d_model, size_t batch);
+
+void gpu_layernorm_batch(float* x, const float* w, const float* b, int row_size, size_t batch);
+void gpu_add_batch(float* x, const float* y, int row_size, size_t batch);
+
+void gpu_mamba_conv1d_batch(const float* x_in, float* state, const float* weight, const float* bias, float* out, int d_inner, int d_conv, int x_stride, size_t batch);
+void gpu_mamba_ssm_batch(const float* x, const float* dt, const float* A_log, const float* D, 
+                         const float* B, const float* C, float* state, float* out, 
+                         int d_inner, int d_state, int dt_rank, size_t batch);
+
+void gpu_add_bias_softplus_batch(float* x, const float* b, int N, size_t batch);
+void gpu_gelu_batch(float* x, int N, size_t batch);
+
+void gpu_mamba_ssm_fused_batch(const float* x_conv, const float* x_z, const float* dt_logits, const float* dt_bias, 
+                               const float* A_log, const float* D, 
+                               const float* B_base_ptr, float* state, float* out, 
+                               int d_inner, int d_state, int dt_rank, size_t batch);
+
+
+
+// Range Coder Encoder Kernels
+void gpu_rc_init(RCState* states, int batch_size);
+void gpu_rc_encode_step_batch(const float* logits, const int* targets, RCState* states, unsigned int* out_bufs, int pitch_words, int vocab_size, int batch_size);
+void gpu_rc_encode_step_batch_strided(const float* logits, const int* targets, RCState* states, unsigned int* out_bufs, int pitch_words, int vocab_size, int batch_size, int logit_stride);
+void gpu_rc_encode_step_batch_masked(const float* logits, const int* targets, const int* lengths, int t, RCState* states, unsigned int* out_bufs, int pitch_words, int vocab_size, int batch_size);
+void gpu_rc_encode_chunk_batch_strided(const float* logits, const int* chunk_data, const int* lengths, RCState* states, unsigned int* out_bufs,
+                                       int pitch_words, int vocab_size, int batch_size, int len, int max_len, int sub_start, int logit_stride);
+// Warp Parallel Version
+void gpu_rc_encode_chunk_warp(const float* logits, const int* chunk_data, const int* lengths,
+                              RCState* states, unsigned int* out_bufs,
+                              int pitch_words, int vocab_size, int batch_size,
+                              int chunk_len, int max_len, int start_t, int logit_stride);
+
+void gpu_init_exp_lut();
+
+void gpu_rc_finish_batch(RCState* states, unsigned int* out_bufs, int pitch_words, int* sizes_words, int batch_size);
+
+// Range Coder Decoder State
+struct RCDecState {
+    unsigned long long lower;
+    unsigned long long range;
+    unsigned long long point;
+    int read_idx_words;
+};
+
+// Range Coder Decoder Kernels
+void gpu_rc_init_decoder(RCDecState* states, const unsigned int* in_bufs, const int* sizes_words, int pitch_words, int batch_size);
+void gpu_rc_decode_step_batch(const float* logits, const int* in_tokens, const int* lengths, int t, int* out_symbols, RCDecState* states, const unsigned int* in_bufs, const int* sizes_words, int pitch_words, int vocab_size, int batch_size);
+void gpu_rc_decode_fused_step_batch(const float* logits, const float* head_b2, int* d_tokens, const int* lengths, int t, int* d_batch_output, int chunk_size, RCDecState* states, const unsigned int* in_bufs, const int* sizes_words, int pitch_words, int vocab_size, int batch_size);
+
+// Optimizations
+void gpu_select_tokens(const int* d_chunk_data, int* d_tokens, int t, int chunk_size, int batch_size);
+void gpu_store_tokens(const int* d_out_symbols, int* d_chunk_data, int t, int chunk_size, int batch_size);
+
+// Helpers
+void malloc_device(float** ptr, size_t bytes);
+void free_device(float* ptr);
+void copy_to_device(float* d_ptr, const float* h_ptr, size_t bytes);
+void copy_to_host(float* h_ptr, const float* d_ptr, size_t bytes);
+
+void get_gpu_vram_info(size_t& free_bytes, size_t& total_bytes);
