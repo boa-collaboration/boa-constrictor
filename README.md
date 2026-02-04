@@ -1,4 +1,4 @@
-# BoaConstrictor: A Mamba-based Lossless Compressor for High Energy Physics Data
+# BoaConstrictor: A Mamba-based Lossless Compressor for High Energy Physics Data [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 This repo provides a byte-level compression pipeline driven by a neural predictor (BoaConstrictor) and entropy coding (range coding). It includes:
 
@@ -237,6 +237,11 @@ If you use this codebase, or otherwise find our work valuable, please cite BOA C
                   },
 }
 ```
+## License
+
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPLv3)**.
+
+See the [LICENSE](LICENSE) file for details.
 
 ## Disclosure of Delegation to Generative AI
 
