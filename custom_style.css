@@ -1,0 +1,107 @@
+:root {
+    --primary-color: #2563eb;
+    --primary-dark: #1d4ed8;
+    --bg-color: #f8fafc;
+    --text-color: #0f172a;
+    --box-bg: #ffffff;
+    --border-color: #e2e8f0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+/* Header */
+#top {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border-bottom: none;
+}
+
+#titlearea {
+    padding: 20px;
+    color: white;
+}
+
+.title {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* Menus */
+.sm-dox {
+    background: transparent;
+    background-image: none;
+}
+
+.sm-dox a, .sm-dox a:focus, .sm-dox a:hover, .sm-dox a:active {
+    background: transparent;
+    background-image: none;
+    color: white !important;
+    text-shadow: none;
+    font-weight: 600;
+}
+
+.sm-dox ul {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+}
+
+.sm-dox ul a {
+    color: var(--text-color) !important;
+}
+
+.sm-dox ul a:hover {
+    background: var(--bg-color);
+    color: var(--primary-color) !important;
+}
+
+/* Contents */
+.contents {
+    background: var(--box-bg);
+    border-radius: 12px;
+    padding: 30px;
+    margin: 20px auto;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    max-width: 1200px;
+}
+
+.textblock {
+    font-size: 16px;
+}
+
+h1, h2, h3, h4 {
+    color: var(--primary-color);
+    font-weight: 700;
+}
+
+a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* Code blocks */
+div.fragment {
+    background-color: #1e293b;
+    border: none;
+    border-radius: 8px;
+    padding: 15px;
+    color: #f8fafc;
+}
+
+.line {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    font-size: 14px;
+}

@@ -1,0 +1,27 @@
+var group__nvml_device_commands =
+[
+    [ "nvmlDeviceClearEccErrorCounts", "group__nvml_device_commands.html#gadd3c6787e729b650792b73fc86b9cedf", null ],
+    [ "nvmlDeviceResetApplicationsClocks", "group__nvml_device_commands.html#gabe6c0458851b3db68fa9d1717b32acd1", null ],
+    [ "nvmlDeviceResetGpuLockedClocks", "group__nvml_device_commands.html#ga51a3ca282a33471fe50c19751a99ead2", null ],
+    [ "nvmlDeviceResetMemoryLockedClocks", "group__nvml_device_commands.html#gac131dbdbebe753f63b254e0ec76f7154", null ],
+    [ "nvmlDeviceSetAPIRestriction", "group__nvml_device_commands.html#gade319ab4fb254a7c42625d6eca2bf37d", null ],
+    [ "nvmlDeviceSetApplicationsClocks", "group__nvml_device_commands.html#gac2a9a8db6fffb2604d27fd67e8d5d87f", null ],
+    [ "nvmlDeviceSetAutoBoostedClocksEnabled", "group__nvml_device_commands.html#gaac41407ee3de3a02c41cbfffb274e38a", null ],
+    [ "nvmlDeviceSetComputeMode", "group__nvml_device_commands.html#ga46190036e09993886aed66a03336c68b", null ],
+    [ "nvmlDeviceSetConfComputeUnprotectedMemSize", "group__nvml_device_commands.html#gab6eed6fc4c7cca4342951c768a41e69b", null ],
+    [ "nvmlDeviceSetDefaultAutoBoostedClocksEnabled", "group__nvml_device_commands.html#gab411f7b65166cb646a673550e1f3eafb", null ],
+    [ "nvmlDeviceSetDefaultFanSpeed_v2", "group__nvml_device_commands.html#ga0e6a294269aa9eee48fd1a5c4147da69", null ],
+    [ "nvmlDeviceSetDriverModel", "group__nvml_device_commands.html#ga7329f0f4eb7d18f2728a30b1ef923c8d", null ],
+    [ "nvmlDeviceSetEccMode", "group__nvml_device_commands.html#ga89e06bac35fb3e843cbffff43aab65d0", null ],
+    [ "nvmlDeviceSetFanControlPolicy", "group__nvml_device_commands.html#gafd88e423e7d2b2bae6687ad23be3f61b", null ],
+    [ "nvmlDeviceSetFanSpeed_v2", "group__nvml_device_commands.html#ga2cff59fde3b91b22ea10dfa5d27a546b", null ],
+    [ "nvmlDeviceSetGpcClkVfOffset", "group__nvml_device_commands.html#ga09cbcfd131202a31e94f83c30566d5cd", null ],
+    [ "nvmlDeviceSetGpuLockedClocks", "group__nvml_device_commands.html#gac9b58cd685f4deee575400e2e6ac76cb", null ],
+    [ "nvmlDeviceSetGpuOperationMode", "group__nvml_device_commands.html#gad9a1f599f71b61dc81629b2b0cd0bd70", null ],
+    [ "nvmlDeviceSetMemClkVfOffset", "group__nvml_device_commands.html#ga59520f6bf90eaaa2e700a9ba518c79ca", null ],
+    [ "nvmlDeviceSetMemoryLockedClocks", "group__nvml_device_commands.html#ga3cab0aaf0e46aa76469f18707e5867f1", null ],
+    [ "nvmlDeviceSetPersistenceMode", "group__nvml_device_commands.html#ga1d2d2976b6f3ce21b6677d7821201cca", null ],
+    [ "nvmlDeviceSetPowerManagementLimit", "group__nvml_device_commands.html#gab35472a72da70c8c8e9c9b108b3640b5", null ],
+    [ "nvmlDeviceSetTemperatureThreshold", "group__nvml_device_commands.html#ga0258912fc175951b8efe1440ca59e200", null ],
+    [ "nvmlSystemSetConfComputeGpusReadyState", "group__nvml_device_commands.html#gaebe1705165d701ffecc68f64364b8302", null ]
+];

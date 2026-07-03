@@ -1,0 +1,21 @@
+var searchData=
+[
+  ['capabilities_0',['capabilities',['../structnvml_gpu_instance_profile_info__v3__st.html#afe0b6aab2b127f465c3b93c821767180',1,'nvmlGpuInstanceProfileInfo_v3_st::capabilities'],['../structnvml_compute_instance_profile_info__v3__st.html#a04b7d790d09f09c1f9d10851655b35f2',1,'nvmlComputeInstanceProfileInfo_v3_st::capabilities']]],
+  ['cause_1',['cause',['../structnvml_led_state__st.html#acee504906806b1ccb99027b4534b2340',1,'nvmlLedState_st']]],
+  ['cliqueid_2',['cliqueId',['../structnvml_gpu_fabric_info__t.html#a0748c897ff2210fc570ea74711c28fa0',1,'nvmlGpuFabricInfo_t']]],
+  ['clkapidomain_3',['clkApiDomain',['../structnvml_clk_mon_fault_info__struct.html#a6501c2a3fd13943aa6759f04e0c99024',1,'nvmlClkMonFaultInfo_struct']]],
+  ['clkdomainfaultmask_4',['clkDomainFaultMask',['../structnvml_clk_mon_fault_info__struct.html#a158c22a7f334c5a7e3260dd6c838bbba',1,'nvmlClkMonFaultInfo_struct']]],
+  ['clkmonlist_5',['clkMonList',['../structnvml_clk_mon_status__status.html#a36f38ce10f18fc5369f01aea8e46990f',1,'nvmlClkMonStatus_status']]],
+  ['clkmonlistsize_6',['clkMonListSize',['../structnvml_clk_mon_status__status.html#a79f234e867f1ef2a016fc54b019fb747',1,'nvmlClkMonStatus_status']]],
+  ['clusteruuid_7',['clusterUuid',['../structnvml_gpu_fabric_info__t.html#a91ce54e62ed647f3057fdc677e449336',1,'nvmlGpuFabricInfo_t']]],
+  ['codectype_8',['codecType',['../structnvml_encoder_session_info__st.html#a54be0a73a033bf9a2bb1cbef8bbef8f0',1,'nvmlEncoderSessionInfo_st']]],
+  ['color_9',['color',['../structnvml_led_state__st.html#af438b40270643d6ac4e9ec30be7ba230',1,'nvmlLedState_st']]],
+  ['compatibilitylimitcode_10',['compatibilityLimitCode',['../structnvml_vgpu_pgpu_compatibility__st.html#a2b60607dde0641f1cf2d19c86c1b8b46',1,'nvmlVgpuPgpuCompatibility_st']]],
+  ['computeinstanceid_11',['computeInstanceId',['../structnvml_process_info__v2__st.html#a2546cd4c2dfdeb8ab9bd3c655b0906b5',1,'nvmlProcessInfo_v2_st::computeInstanceId'],['../structnvml_process_detail__v1__t.html#ab781dfb32bba7f0a8091f9b64493c7a5',1,'nvmlProcessDetail_v1_t::computeInstanceId'],['../structnvml_event_data__st.html#ae10da7bd9f433993582686582575118a',1,'nvmlEventData_st::computeInstanceId']]],
+  ['computeinstanceslicecount_12',['computeInstanceSliceCount',['../structnvml_device_attributes__st.html#af56f99631a9380ae8c7fa4be1d2ed321',1,'nvmlDeviceAttributes_st']]],
+  ['copyenginecount_13',['copyEngineCount',['../structnvml_gpu_instance_profile_info__st.html#aea69d51e796309e09ef0d030d6fba178',1,'nvmlGpuInstanceProfileInfo_st::copyEngineCount'],['../structnvml_gpu_instance_profile_info__v2__st.html#af3e38a83b0b04bd8e5ab0c52bab53e3c',1,'nvmlGpuInstanceProfileInfo_v2_st::copyEngineCount'],['../structnvml_gpu_instance_profile_info__v3__st.html#ad91736f2d7df6ea467fac0db0dc47093',1,'nvmlGpuInstanceProfileInfo_v3_st::copyEngineCount']]],
+  ['count_14',['count',['../structnvml_unit_fan_speeds__st.html#a85614cc1ce62cbcce2c9b585739bf6e9',1,'nvmlUnitFanSpeeds_st']]],
+  ['cumulativepreemptiontime_15',['cumulativePreemptionTime',['../structnvml_vgpu_scheduler_log_entries__st.html#ae37ed82337e541a6aceccf5a6a0d0de9',1,'nvmlVgpuSchedulerLogEntries_st']]],
+  ['current_16',['current',['../structnvml_p_s_u_info__st.html#ac785123f2a3536b2f0d26bd9472127bf',1,'nvmlPSUInfo_st']]],
+  ['currentstate_17',['currentState',['../structnvml_vgpu_license_info__st.html#a6ed0c277fdd2c1126cd613e078c4e51d',1,'nvmlVgpuLicenseInfo_st']]]
+];

@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['targettimeslice_0',['targetTimeSlice',['../structnvml_vgpu_scheduler_log_entries__st.html#ae8376687dc57752b304b66a49e5fc38c',1,'nvmlVgpuSchedulerLogEntries_st']]],
+  ['the_20drain_20state_1',['definitions related to the drain state',['../group__nvml_drain_defs.html',1,'']]],
+  ['time_2',['time',['../structnvml_accounting_stats__st.html#a74ac4ca4477a6148a7d5ff23189610af',1,'nvmlAccountingStats_st']]],
+  ['timerun_3',['timeRun',['../structnvml_vgpu_scheduler_log_entries__st.html#abc76008c0c65a7a308a6397213d57d93',1,'nvmlVgpuSchedulerLogEntries_st']]],
+  ['timeruntotal_4',['timeRunTotal',['../structnvml_vgpu_scheduler_log_entries__st.html#a8c077445917ebff7687db4879c6a5b03',1,'nvmlVgpuSchedulerLogEntries_st']]],
+  ['timeslice_5',['timeslice',['../unionnvml_vgpu_scheduler_params__t.html#a3d6fdff7fc232927163a542c1adccb6a',1,'nvmlVgpuSchedulerParams_t::timeslice'],['../unionnvml_vgpu_scheduler_set_params__t.html#a1e44c851bc9be74ffdb8b73073ca9f0c',1,'nvmlVgpuSchedulerSetParams_t::timeslice']]],
+  ['timestamp_6',['timeStamp',['../structnvml_sample__st.html#a064ed1d54cc242b35f6ce9fca6a26809',1,'nvmlSample_st::timeStamp'],['../structnvml_vgpu_instance_utilization_sample__st.html#a935d1207494b62070be7b388684d7fd9',1,'nvmlVgpuInstanceUtilizationSample_st::timeStamp'],['../structnvml_vgpu_process_utilization_sample__st.html#a46f9cf3ed85bd19b5edf43e833105cd1',1,'nvmlVgpuProcessUtilizationSample_st::timeStamp'],['../structnvml_process_utilization_sample__st.html#a5fab7fd3efacf6d4964670774cbb8217',1,'nvmlProcessUtilizationSample_st::timeStamp']]],
+  ['timestamp_7',['timestamp',['../structnvml_vgpu_scheduler_log_entries__st.html#ac0c0a6910e75b24d9c569ebf4f0b0a4a',1,'nvmlVgpuSchedulerLogEntries_st::timestamp'],['../structnvml_field_value__st.html#a699195037d9201905a0bf7dc1c0058ed',1,'nvmlFieldValue_st::timestamp']]],
+  ['to_20confidential_20computing_8',['/nvmlDevice definitions related to Confidential Computing',['../group__nvml_system.html',1,'']]],
+  ['to_20generative_20ai_9',['Disclosure of Delegation to Generative AI',['../md__r_e_a_d_m_e.html#autotoc_md69',1,'']]],
+  ['to_20run_10',['How to Run',['../dir_30663ad5f928a013817ea58ff4b558ad.html#autotoc_md51',1,'']]],
+  ['to_20run_11',['to run',['../dir_e908d59943299ec880b9bbbaca30f55d.html#autotoc_md22',1,'How to run'],['../dir_5cb03c7934572199e4d8443269d84a1f.html#autotoc_md28',1,'How to run']]],
+  ['to_20the_20drain_20state_12',['definitions related to the drain state',['../group__nvml_drain_defs.html',1,'']]],
+  ['tool_20for_20cpp_20cuda_20programs_13',['Energy Measurement tool for CPP/CUDA programs',['../dir_fec7cc3dcdc163d7f37786bebcbdcf56.html#autotoc_md39',1,'']]],
+  ['total_14',['total',['../structnvml_memory__st.html#ae3f13f4b342c524fb3f37a8c424b0da8',1,'nvmlMemory_st::total'],['../structnvml_memory__v2__st.html#a21ed843961033705d8875f4bd8a13803',1,'nvmlMemory_v2_st::total']]],
+  ['train_5fhydra_15',['train_hydra',['../namespacemain__hydra.html#ac342179f1a6bf5a775db9ca3ca068d69',1,'main_hydra']]],
+  ['transfer_16',['Option 2: Globus Transfer',['../dir_fb978f050348f58c8e15c00e207f592a.html#autotoc_md14',1,'']]],
+  ['transformerblock_17',['TransformerBlock',['../classmodel_1_1_transformer_block.html',1,'model']]],
+  ['trip_20helper_18',['ATLAS jets round-trip helper',['../dir_364c2d4a8a2109fad5683d5a25a34eab.html#autotoc_md0',1,'']]],
+  ['trip_20pipeline_20root_20↔_20bin_20large_20lg_20dataset_19',['CMS Round-Trip Pipeline (ROOT ↔ bin) [Large (lg) Dataset]',['../dir_5cb03c7934572199e4d8443269d84a1f.html#autotoc_md25',1,'']]],
+  ['troubleshooting_20',['Troubleshooting',['../dir_e908d59943299ec880b9bbbaca30f55d.html#autotoc_md24',1,'Troubleshooting'],['../md__r_e_a_d_m_e.html#autotoc_md65',1,'Troubleshooting']]],
+  ['troubleshooting_21',['Notes and troubleshooting',['../dir_364c2d4a8a2109fad5683d5a25a34eab.html#autotoc_md8',1,'']]],
+  ['type_22',['type',['../structnvml_bridge_chip_info__st.html#a1ad6c5a25095c1f698496a44c1a4f2e7',1,'nvmlBridgeChipInfo_st']]],
+  ['types_23',['Event Types',['../group__nvml_event_type.html',1,'']]]
+];

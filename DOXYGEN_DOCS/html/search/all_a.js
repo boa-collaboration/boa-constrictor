@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['generate_5fisotropic_5fturbulence_5fdata_0',['generate_isotropic_turbulence_data',['../namespacedownload__cfd.html#a4f6aff65dba209a33d3709b118feb6d7',1,'download_cfd']]],
+  ['generate_5fturbulent_5ffield_5f3d_1',['generate_turbulent_field_3d',['../namespacedownload__cfd.html#aca4c33e02555082eb14c92fb29a6df98',1,'download_cfd']]],
+  ['generative_20ai_2',['Disclosure of Delegation to Generative AI',['../md__r_e_a_d_m_e.html#autotoc_md69',1,'']]],
+  ['getenergy_3',['getEnergy',['../class_n_v_m_l_device.html#ac8ce36b9ed1a3a642d561c48681a7817',1,'NVMLDevice::getEnergy()'],['../class_r_a_p_l_device.html#a06237eb458c2d92bf34a22ca2143978b',1,'RAPLDevice::getEnergy()']]],
+  ['globus_20transfer_4',['Option 2: Globus Transfer',['../dir_fb978f050348f58c8e15c00e207f592a.html#autotoc_md14',1,'']]],
+  ['gpm_5',['NVML GPM',['../group___g_p_m.html',1,'']]],
+  ['gpm_20enums_6',['GPM Enums',['../group__nvml_gpm_enums.html',1,'']]],
+  ['gpm_20functions_7',['GPM Functions',['../group__nvml_gpm_functions.html',1,'']]],
+  ['gpm_20structs_8',['GPM Structs',['../group__nvml_gpm_structs.html',1,'']]],
+  ['gpu_9',['gpu',['../classgpu__range__coder_1_1gpu.html',1,'gpu_range_coder.gpu'],['../structnvml_utilization__st.html#a6fce27d0951fbe2f3da806e1885d641f',1,'nvmlUtilization_st::gpu']]],
+  ['gpu_20management_10',['Multi Instance GPU Management',['../group__nvml_multi_instance_g_p_u.html',1,'']]],
+  ['gpu_20performance_20notes_11',['CPU and GPU performance notes',['../md__r_e_a_d_m_e.html#autotoc_md62',1,'']]],
+  ['gpu_20queries_12',['Excluded GPU Queries',['../group__nvml_excluded_gpu_queries.html',1,'']]],
+  ['gpuinstance_13',['gpuInstance',['../structnvml_compute_instance_info__st.html#a1c80562fb9675e26f87c0496c1b390ab',1,'nvmlComputeInstanceInfo_st']]],
+  ['gpuinstanceid_14',['gpuInstanceId',['../structnvml_process_info__v2__st.html#a8c53ef7e26c8977551342377bff9289a',1,'nvmlProcessInfo_v2_st::gpuInstanceId'],['../structnvml_process_detail__v1__t.html#a62566996d1635ee8c00223f039c12c4a',1,'nvmlProcessDetail_v1_t::gpuInstanceId'],['../structnvml_event_data__st.html#a2096dac21469dbbcfdfbb07daa0ec156',1,'nvmlEventData_st::gpuInstanceId']]],
+  ['gpuinstanceslicecount_15',['gpuInstanceSliceCount',['../structnvml_device_attributes__st.html#ae0c61e3a6f4c20976c3f41813d8fc002',1,'nvmlDeviceAttributes_st']]],
+  ['gpuutilization_16',['gpuUtilization',['../structnvml_accounting_stats__st.html#a638468208cfd73d62b2951fef33a1095',1,'nvmlAccountingStats_st']]],
+  ['gridlicensablefeatures_17',['gridLicensableFeatures',['../structnvml_grid_licensable_features__st.html#a7893a67b3b386a2b31ddae98b12973a4',1,'nvmlGridLicensableFeatures_st']]],
+  ['griffinblock_18',['GriffinBlock',['../classmodel_1_1_griffin_block.html',1,'model']]],
+  ['grublock_19',['GRUBlock',['../classmodel_1_1_g_r_u_block.html',1,'model']]],
+  ['grublockgpu_20',['GRUBlockGPU',['../struct_g_r_u_block_g_p_u.html',1,'']]],
+  ['guestdriverversion_21',['guestDriverVersion',['../structnvml_vgpu_metadata__st.html#ae6805561865e6e89b8d2d47dff740fd2',1,'nvmlVgpuMetadata_st']]],
+  ['guestinfostate_22',['guestInfoState',['../structnvml_vgpu_metadata__st.html#a17f96f97229a4f01c8466d9ab9769e7e',1,'nvmlVgpuMetadata_st']]],
+  ['guestvgpuversion_23',['guestVgpuVersion',['../structnvml_vgpu_metadata__st.html#a155fef8acbd91651a32ec245b866b10c',1,'nvmlVgpuMetadata_st']]]
+];

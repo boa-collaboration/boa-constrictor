@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['bar1free_0',['bar1Free',['../structnvml_b_a_r1_memory__st.html#ac7f97ed7c23f271d0d3e8b36256c747e',1,'nvmlBAR1Memory_st']]],
+  ['bar1total_1',['bar1Total',['../structnvml_b_a_r1_memory__st.html#a940034f9efd08114e0f84d7af288cb2f',1,'nvmlBAR1Memory_st']]],
+  ['bar1used_2',['bar1Used',['../structnvml_b_a_r1_memory__st.html#a10c6b02869e2242b5c3cad8748830544',1,'nvmlBAR1Memory_st']]],
+  ['based_20lossless_20compressor_20for_20high_20energy_20physics_20data_3',['BoaConstrictor: A Mamba-based Lossless Compressor for High Energy Physics Data &lt;a href=&quot;https://www.gnu.org/licenses/agpl-3.0&quot;&gt;&lt;img src=&quot;https://img.shields.io/badge/License-AGPL_v3-blue.svg&quot; alt=&quot;License: AGPL v3&quot; style=&quot;pointer-events: none;&quot; class=&quot;inline&quot;/&gt;&lt;/a&gt;',['../md__r_e_a_d_m_e.html',1,'']]],
+  ['batches_4',['Streaming compression batches',['../md__r_e_a_d_m_e.html#autotoc_md63',1,'']]],
+  ['bglobalstatus_5',['bGlobalStatus',['../structnvml_clk_mon_status__status.html#afed61fdba022c24e5fef0cf41c78629a',1,'nvmlClkMonStatus_status']]],
+  ['bin_20large_20lg_20dataset_6',['CMS Round-Trip Pipeline (ROOT ↔ bin) [Large (lg) Dataset]',['../dir_5cb03c7934572199e4d8443269d84a1f.html#autotoc_md25',1,'']]],
+  ['binary_20format_7',['Binary format',['../dir_5cb03c7934572199e4d8443269d84a1f.html#autotoc_md27',1,'']]],
+  ['binmeta_8',['BinMeta',['../classdownload_1_1_bin_meta.html',1,'download']]],
+  ['bispresent_9',['bIsPresent',['../structnvml_gpu_dynamic_pstates_info__st.html#a60225000f3b5c4b680debb84629abb51',1,'nvmlGpuDynamicPstatesInfo_st']]],
+  ['boa_20constrictor_20c_20cuda_20implementation_10',['Boa Constrictor C++/CUDA Implementation',['../dir_30663ad5f928a013817ea58ff4b558ad.html#autotoc_md45',1,'']]],
+  ['boa2container_11',['Boa2Container',['../struct_boa2_container.html',1,'']]],
+  ['boablockgpu_12',['BoaBlockGPU',['../struct_boa_block_g_p_u.html',1,'']]],
+  ['boaconstrictor_3a_20a_20mamba_20based_20lossless_20compressor_20for_20high_20energy_20physics_20data_13',['BoaConstrictor: A Mamba-based Lossless Compressor for High Energy Physics Data &lt;a href=&quot;https://www.gnu.org/licenses/agpl-3.0&quot;&gt;&lt;img src=&quot;https://img.shields.io/badge/License-AGPL_v3-blue.svg&quot; alt=&quot;License: AGPL v3&quot; style=&quot;pointer-events: none;&quot; class=&quot;inline&quot;/&gt;&lt;/a&gt;',['../md__r_e_a_d_m_e.html',1,'']]],
+  ['boapredictorgpu_14',['BoaPredictorGPU',['../struct_boa_predictor_g_p_u.html',1,'']]],
+  ['branchmeta_15',['BranchMeta',['../classdownload_1_1_branch_meta.html',1,'download']]],
+  ['bridgechipinfo_16',['bridgeChipInfo',['../structnvml_bridge_chip_hierarchy__st.html#a026f20fa77fe024d36b76e1ea8146f00',1,'nvmlBridgeChipHierarchy_st']]],
+  ['bridgecount_17',['bridgeCount',['../structnvml_bridge_chip_hierarchy__st.html#a43c67aea637d7f8f6a3a877578600e55',1,'nvmlBridgeChipHierarchy_st']]],
+  ['buffer_20capture_20structures_18',['Frame Buffer Capture Structures',['../group__nvml_f_b_c_structs.html',1,'']]],
+  ['build_20no_20energy_20measurement_19',['Standard Build (no energy measurement)',['../dir_30663ad5f928a013817ea58ff4b558ad.html#autotoc_md47',1,'']]],
+  ['build_20with_20energy_20measurement_20denable_5fenergy_20',['Build with Energy Measurement (&lt;span class=&quot;tt&quot;&gt;-DENABLE_ENERGY&lt;/span&gt;)',['../dir_30663ad5f928a013817ea58ff4b558ad.html#autotoc_md48',1,'']]],
+  ['bus_21',['bus',['../structnvml_pci_info__st.html#aba522e0e0c6f7174de6683f27e6e8d06',1,'nvmlPciInfo_st']]],
+  ['busid_22',['busId',['../structnvml_pci_info__st.html#a4bbc88ef639a15d1e464ce72af0b122d',1,'nvmlPciInfo_st']]],
+  ['busidlegacy_23',['busIdLegacy',['../structnvml_pci_info__st.html#afafebc6f45fc18e7c96fe177d91f9b46',1,'nvmlPciInfo_st']]],
+  ['bytedataloader_24',['ByteDataloader',['../classmodel_1_1_byte_dataloader.html',1,'model']]]
+];
