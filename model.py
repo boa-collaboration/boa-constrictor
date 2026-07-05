@@ -101,6 +101,8 @@ class GRUBlock(nn.Module):
         self.ff = _FeedForward(d_model)
 
     def forward(self, x, inference_params=None):
+        if self.training:
+            self.gru.train()
         y = self.ln1(x)
         y, _ = self.gru(y)
         x = x + y
@@ -135,11 +137,18 @@ class GRUBlock(nn.Module):
 # O(L / P) wall-clock on very long sequences.
 # ──────────────────────────────────────────────────────────────────
 
-from minGRU_pytorch.minGRU import (
-    heinsen_associative_scan_log,
-    log_g as _mingru_log_g,
-    g as _mingru_g,
-)
+try:
+    from minGRU_pytorch.minGRU import (
+        heinsen_associative_scan_log,
+        log_g as _mingru_log_g,
+        g as _mingru_g
+    )
+    _HAS_MINIGRU = True
+except ImportError:
+    _HAS_MINIGRU = False
+    heinsen_associative_scan_log = None
+    _mingru_log_g = None
+    _mingru_g = None
 
 
 class _MinGRUCell(nn.Module):

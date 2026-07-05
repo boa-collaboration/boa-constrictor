@@ -7,10 +7,10 @@ dataloader:
 device: cuda
 file_path: CMS_DATA_float32.bin
 model:
-  backbone: mambav1
+  backbone: lstm
   d_model: 64
   num_layers: 2
-model_path: cms_experiment_d256_L1_f0.50_s46_final_model_fp32.pt
+model_path: cms_experiment_final_model_fp32.pt
 name: cms_experiment
 precision: fp32
 progress: true
@@ -19,5 +19,5 @@ splits:
 - 0.1
 - 0.1
 training:
-  epochs: 40
+  epochs: 20
   lr: 5e-4

@@ -162,6 +162,7 @@ def train(model, train_loader, val_loader, test_loader, optimizer, criterion, de
         }
         torch.save(_ckpt, f"{name}_{datetime.now().strftime('%dth%b')}_Checkpoint_epoch_{epoch}_{PRECISION}.pt")
         val_bpp = evaluate_bpp(model, val_loader, criterion, device=device, vocab_size=vocab_size)
+        model.train()  # restore train mode after validation
         current_lr = optimizer.param_groups[0]['lr']
         print(f"[Epoch {epoch}] val bpp={val_bpp:.4f} (ratio ~ {8/val_bpp:.2f}x)  lr={current_lr:.2e}")
 
