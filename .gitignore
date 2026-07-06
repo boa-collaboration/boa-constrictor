@@ -195,3 +195,13 @@ portability_solved_cpp/windows_build/*
 hepmc_energy_decomp.bin.decompress_energy.csv
 hepmc_energy_test.boa.compress_energy.csv
 extract_and_compress_50k.py
+
+# CodeCarbon / notebook experiment outputs
+code_carbon/
+*.boa
+*.pt
+*_emissions.csv
+*_carbon_summary.csv
+boa_position_aware_carbon_comparison.csv
+raw_aligned_end_to_end_carbon.csv
+baseline_boa_end_to_end_carbon_summary.csv

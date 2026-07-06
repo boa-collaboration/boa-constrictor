@@ -26,3 +26,5 @@ aiohttp==3.13.2
 zstandard>=0.22.0
 lz4>=4.3.0
 wandb>=0.16.0
+codecarbon>=2.4.0
+pandas>=2.0
